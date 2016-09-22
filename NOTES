@@ -1,0 +1,138 @@
+Fluent case-file sections:
+
+- Comment:
+(0 "This is a comment")
+
+- Header
+(1 "Software that made the case file ")
+
+- Dimensions
+(2 3)
+In this example the case file is for a two-dimensional problem
+
+- Nodes
+(10 (zone-id first-index last-index type ND)(
+. . .
+. . .
+))
+This example repeats the number of dimensions at "ND" and type is qlways equal
+to 1. If the "zone-id" is zero, it describes the total number of nodes in the
+file and there are no coordinates given. For example:
+(10 (0 1 2d5 1 2))
+The numbers "1" and "2d5" are in hexadecimal.
+If the zone-id is greater than zero, it indicates the zone number to which the
+nodes belong. If the number of coordinate dimensions in the file are 2, only
+2 real/double numbers are given per node.
+
+- Cells
+(12 (zone-id first-index last-index type element-type))
+If the zone-id is zero, it is a declaration of the total number or cells.
+If the last-index is zero, there are no cells in the grid. (This may not mean
+that there are no cells that one can form from the faces, but that the file
+does not explicitly declare cells, I think.) In that case, the typs is zero
+and the element-type is not even present in the declaration. For example:
+(12 (0 1 3e3 0))
+Such a declaration is _required_ and needs to _preceed_ the cells declaration
+section.
+below is the table for element types:
+----------------------------------------------
+element-type description nodes/cell faces/cell
+0 mixed
+1 triangular 3 3
+2 tetrahedral 4 4
+3 quadrilateral 4 4
+4 hexahedral 8 6
+5 pyramid 5 5
+6 wedge 6 5
+----------------------------------------------
+Regular cell sections have no body, but they have a header of the same format.
+
+
+- Faces
+(13 (zone-id first-index last-index type element-type))
+The entry may also appear as: (13 (0 first-index last-index 0))
+It is the same declation format as for cells, but designation is "13" instead.
+A zone-id of zero indicates that this is a declaration line with no body.
+The body of a regular face section (one with non-zero for zone-id) has the
+nodes that make the face and the left and right cell numbers. For example:
+n0 n1 n2 cr cl
+for a triangular face and
+n0 n1 n2 n4 cr cl for a quadrilateral face. The distinction is made ahead of
+time in the declaration by the "element-type" attribute. If the face zone is
+of mixed-element type (element-type=0), then there is an additional number
+preceeding the nodes for each line indicating the type. For example:
+type n0 n1 [n2 n3] cr cl
+Notice how n2 and n3 are optional in case the element is one-dimensional.
+The following table shows the face type identifiers:
+----------------------------------
+element-type face type nodes/face
+0 mixed
+2 linear 2
+3 triangular 3
+4 quadrilateral 4
+----------------------------------
+The "type" attribute is one of the "bc name" types described in the table:
+----------------------------------
+bc name bc id
+interior 2
+wall 3
+pressure-inlet, inlet-vent, intake-fan 4
+pressure-outlet, exhaust-fan, outlet-vent 5
+symmetry 7
+periodic-shadow 8
+pressure-far-eld 9
+velocity-inlet 10
+periodic 12
+fan, porous-jump, radiator 14
+mass-flow-inlet 20
+interface 24
+parent (hanging node) 31
+out ow 36
+axis 37
+----------------------------------
+For example, a section of faces that represent "velocity-inlet" would be:
+(13 (1 679bc1 67e60c a 4) (
+where you notice type "a" (which is 10 in hex) and quadrilaterals as elements.
+Something is said about non-conformal faces and a factor of 1000 added to
+the element type. (I am not concerned about that right now.)
+
+
+- Period Shadow Faces
+
+- Face Tree
+
+- Cell Tree
+
+
+----------------------------------
+Notes on the HDF output files
+
+The code can output an HDF file, acting as a filter and using very little
+memory during the conversion. The output file contains three necessary HDF
+datasets: "nodes"  "faces" and "zones". Anyone who attempts to read this file
+should read the zones file first. Then, faces can be associated with a zone
+group, while they are stacked in a single array in the "faces" dataset. The
+same is true for nodes in the "nodes" dataset. There is no "cells" dataset
+at this point. The zones structure in the H5 file looks like this:
+
+    Type:      struct {
+                   "id"               +0    native int
+                   "itype"            +4    native int
+                   "iattr"            +8    native int
+                   "nstart"           +16   native long
+                   "nend"             +24   native long
+               } 32 bytes
+
+The "id" is the number of each zone given in the original case file. The
+"itype"  integer indicates whether the zone is for nodes, faces or cells.
+The "iattr" integer is associated with face groups, and it holds the type
+of face group that this is according to the Fluent case file specification.
+I generally use this as a tag for a group of faces that will be used as a
+particular boundary condition. My software interprets this flag in a way
+that may be different from Fluent. The "nstart" and "nend" long integers
+are the bounds of the face, cell or node group in the one-dimensional array
+in which they are found, which is either the "nodes" "faces" dataset in the
+H5 file. I do not treat the cells with a separate dataset.
+
+IN 2016/09/14
+
