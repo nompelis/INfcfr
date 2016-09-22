@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # INfcfr v1.9
 
  A simple library for parsing and handling Fluent "case" files intended for
@@ -36,7 +35,3 @@ http://nobelware.com/
 
 IN 2016/09/22
 
-=======
-# INfcfr
-A library for parsing and handling Fluent "case" files intended for computational fluid dynamics (CFD) simulations.
->>>>>>> 1df39bcb3bd64a04f32811eb6ec5378714b4a849
