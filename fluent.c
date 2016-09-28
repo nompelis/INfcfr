@@ -852,13 +852,14 @@ int influent_readcase_(struct my_fluentcase *cas, char *filename) {
 /*
  * Fucntion to initialize the fluent case structures
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20110330
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20110406
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160928
  */
 
 int inFluent_InitCase(struct my_fluentcase *cas) {
    size_t size;
 
 
+   cas->header = NULL;
    cas->type = 0;
 
    cas->nno = 0;

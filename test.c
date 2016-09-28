@@ -25,7 +25,7 @@ int tecplot_groups_opengl_style( struct my_fluentcase *cas, char *filename )
    int n;
 
    if( cas->type != 3 ) {
-      fprintf(stdout," e  This function is for displaying only 3D casee \n");
+      fprintf(stdout," e  This function is for displaying only 3D cases \n");
       return(1);
    }
 
