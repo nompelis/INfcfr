@@ -175,13 +175,13 @@ int inFluent_HandleCells(struct my_fluentcase *cas, char *data,
 /*
  * Fucntion to handle the reading of nodes from the case file
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20110401
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20140516
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160930
  */
 
 int inFluent_HandleNodes(struct my_fluentcase *cas, char *data,
                          long *nline, FILE *fp) {
 
-   int id,nd;
+   int id,it,nd;
    long istart,iend;
    size_t size;
    struct my_fluentzone *zp;
@@ -195,7 +195,7 @@ int inFluent_HandleNodes(struct my_fluentcase *cas, char *data,
    // (10 (zone-id first-index last-index type ND)(     OR
    // (10 (0       first-index last-index type ND))
    // where "type" is always zero
-   sscanf(data,"(10 (%x %lx %lx 0 %d)",&id,&istart,&iend,&nd);
+   sscanf(data,"(10 (%x %lx %lx %x %d)",&id,&istart,&iend,&it,&nd);
 
    if(id == 0) {
       fprintf(stdout," i [inFluent_HandleNodes]  Case file provided total number of nodes: %ld \n",iend);
@@ -230,7 +230,7 @@ int inFluent_HandleNodes(struct my_fluentcase *cas, char *data,
 
          zp->id   = id;  // this may have to be moved further down
          zp->type = 10;  // this may have to be moved further down
-         zp->iattr = 0;
+         zp->iattr = it;
       }
 
       if(cas->nno <= 0) {
@@ -323,7 +323,7 @@ int inFluent_HandleNodes(struct my_fluentcase *cas, char *data,
 /*
  * Fucntion to handle the reading of faces from the case file
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20110401
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20140516
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160930
  */
 
 int inFluent_HandleFaces(struct my_fluentcase *cas, char *data,
@@ -342,7 +342,7 @@ int inFluent_HandleFaces(struct my_fluentcase *cas, char *data,
    // Note that there are two posibilities!
    // (13 (0 first-index last-index 0))
    // (13 (zone-id first-index last-index type element-type))
-   sscanf(data,"(13 (%x %lx %lx %x)",&id,&istart,&iend,&type);
+   sscanf(data,"(13 (%x %lx %lx %x",&id,&istart,&iend,&type);
 
    // for now die when a mixed element type is given
    if(id != 0) {
@@ -730,7 +730,7 @@ int inFluent_Scanline(char *data, char *parse, int size) {
 /*
  * Fucntion to organize the reading of the case file
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20110330
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160914
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160930
  */
 
 int inFluent_ReadCase(struct my_fluentcase *cas, char *filename) {
@@ -830,6 +830,8 @@ int inFluent_ReadCase(struct my_fluentcase *cas, char *filename) {
 
    fclose(fp);
 
+   if(cas->type == 0) cas->type = 3;
+
    (void) gettimeofday(&tv2,&tz);
    fprintf(stdout," i [inFluent_ReadCase]  Read file in %ld sec \n",
           (long) tv2.tv_sec - tv1.tv_sec);
@@ -926,7 +928,7 @@ void inFluent_CaseInfo(struct my_fluentcase *cas) {
    for(n=0;n<cas->nzone;++n) {
       id = cas->zones[n].id;
       it = cas->zones[n].type;
-      is = cas->zones[n].type;
+      is = cas->zones[n].type;    // capped index to avoid array overflow
       if(is > 20) is = 0;
       ia = cas->zones[n].iattr;
       if(ia > 40 || ia < 0) ia = 0;
@@ -1250,7 +1252,7 @@ int inFluent_HandleNodesHDF(struct my_fluentcase *cas, char *data,
 /*
  * Fucntion to read the nodes in the case file
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20130612
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20140516
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160930
  */
 
 int inFluent_HandleCellsHDF(struct my_fluentcase *cas,
@@ -1268,7 +1270,7 @@ int inFluent_HandleCellsHDF(struct my_fluentcase *cas,
    // note that it is like this:
    // (12 (0       first-index last-index type))
    // (12 (zone-id first-index last-index type XX))     OR
-   sscanf(data,"(12 (%x %lx %lx %x)",&id,&istart,&iend,&it);
+   sscanf(data,"(12 (%x %lx %lx %x",&id,&istart,&iend,&it);
 
    if(id == 0) {
       fprintf(stdout," i [%s]  Case file provided total number of cells: %ld \n",FUNC,iend);
@@ -1288,7 +1290,7 @@ int inFluent_HandleCellsHDF(struct my_fluentcase *cas,
          zp->type = 12;  // this may have to be moved further down
          zp->nstart = istart;
          zp->nend   = iend;
-         zp->iattr  = 0;
+         zp->iattr  = it;
       }
 
       if(cas->nel <= 0) {
