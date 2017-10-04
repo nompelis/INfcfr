@@ -1,6 +1,5 @@
-### Setting compilation mode selects from multiple builds in Mkaefile.comm
+### Setting compilation mode selects from multiple builds in Makefile.comm
 MODE = zero
-MODE = two
 
 include Makefile.comm
 

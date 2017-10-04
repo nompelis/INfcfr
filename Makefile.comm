@@ -1,9 +1,9 @@
 ifeq ($(MODE),zero)
 ############################### GNU compiler
-CC = mpicc
-LD = mpicc
-HDF_INCLUDE = -I /opt_gcc/ompi_1.8.0/hdf5_1.8.14/include
-HDF_LIB = -L /opt_gcc/ompi_1.8.0/hdf5_1.8.14/lib -lhdf5
+CC = gcc
+LD = gcc
+HDF_INCLUDE = 
+HDF_LIB = 
 COPTS = -g -fPIC -D_GNU_SOURCE -O0 -Wall -Wstrict-aliasing  -fstrict-aliasing
 ###############################
 endif
