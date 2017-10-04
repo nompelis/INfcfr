@@ -22,23 +22,33 @@ static struct my_fluentcase fortran_cas;
 // Function to wrap the Fortran initialization procedure
 //
 
-int inFluent_FortranWrapperInit( char *filename ) {
+int inFluent_FortranWrapperInit( char *filename,
+                                 long *nno, long *nel, long *nfa ) {
 
    struct my_fluentcase *cas = &( fortran_cas );
 
    inFluent_InitCase( cas );
    inFluent_ReadCase( cas, filename );
+   *nno = cas->nno;
+   *nel = cas->nel;
+   *nfa = cas->nfa;
 
    return(0);
 }
 
-void influent_fortranwrapperinit_( char *f, int nf ) {
+void influent_fortranwrapperinit_( char *f, long *nno, long *nel, long *nfa,
+                                   int nf ) {
 #ifdef _DEBUG_
    printf("Fortran wrapper initialization called\n");
    printf(" - Filename: (%d) \"%s\"\n", nf, f );
 #endif
 
-   (void) inFluent_FortranWrapperInit( f );
+   (void) inFluent_FortranWrapperInit( f, nno, nel, nfa );
+
+#ifdef _DEBUG_
+   printf(" - Sizes after reading\n");
+   printf("   nno = %ld, nel = %ld, nfa = %ld \n", *nno, *nel, *nfa );
+#endif
 }
 
 
