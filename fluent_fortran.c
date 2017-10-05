@@ -33,17 +33,22 @@ int inFluent_FortranWrapperInit( char *filename,
    *nel = cas->nel;
    *nfa = cas->nfa;
 
+   if( cas->nno <= 0 ) {
+      return(1);
+   }
+
    return(0);
 }
 
 void influent_fortranwrapperinit_( char *f, long *nno, long *nel, long *nfa,
+                                   int *ierr,
                                    int nf ) {
 #ifdef _DEBUG_
    printf("Fortran wrapper initialization called\n");
    printf(" - Filename: (%d) \"%s\"\n", nf, f );
 #endif
 
-   (void) inFluent_FortranWrapperInit( f, nno, nel, nfa );
+   *ierr = inFluent_FortranWrapperInit( f, nno, nel, nfa );
 
 #ifdef _DEBUG_
    printf(" - Sizes after reading\n");
@@ -65,11 +70,11 @@ int inFluent_FortranWrapperTerm() {
    return(0);
 }
 
-void influent_fortranwrapperterm_() {
+void influent_fortranwrapperterm_( int *ierr ) {
 #ifdef _DEBUG_
    printf("Fortran wrapper termination called\n");
 #endif
 
-   (void) inFluent_FortranWrapperTerm();
+   *ierr = inFluent_FortranWrapperTerm();
 }
 
