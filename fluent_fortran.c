@@ -23,13 +23,14 @@ static struct my_fluentcase fortran_cas;
 //
 
 int inFluent_FortranWrapperInit( char *filename,
-                                 long *nno, long *nel, long *nfa )
+                                 int *nzone, long *nno, long *nel, long *nfa )
 {
 
    struct my_fluentcase *cas = &( fortran_cas );
 
    inFluent_InitCase( cas );
    inFluent_ReadCase( cas, filename );
+   *nzone = cas->nzone;
    *nno = cas->nno;
    *nel = cas->nel;
    *nfa = cas->nfa;
@@ -41,7 +42,8 @@ int inFluent_FortranWrapperInit( char *filename,
    return(0);
 }
 
-void influent_fortranwrapperinit_( char *f, long *nno, long *nel, long *nfa,
+void influent_fortranwrapperinit_( char *f,
+                                   int *nzone, long *nno, long *nel, long *nfa,
                                    int *ierr,
                                    int nf )
 {
@@ -50,7 +52,7 @@ void influent_fortranwrapperinit_( char *f, long *nno, long *nel, long *nfa,
    printf(" - Filename: (%d) \"%s\"\n", nf, f );
 #endif
 
-   *ierr = inFluent_FortranWrapperInit( f, nno, nel, nfa );
+   *ierr = inFluent_FortranWrapperInit( f, nzone, nno, nel, nfa );
 
 #ifdef _DEBUG_
    printf(" - Sizes after reading\n");
@@ -86,11 +88,13 @@ void influent_fortranwrapperterm_( int *ierr )
 // Function to wrap the Fortran array transfer procedure
 //
 
-int influent_fortranwrapperfill_( long *ifn, long *ife, double *x, int *ierr )
+int influent_fortranwrapperfill_( long *izone,
+                                  long *ifn, long *ife, double *x, int *ierr )
 {
    long nno,nel,nfa;
    struct my_fluentcase *cas = &( fortran_cas );
    long n;
+   int nz = cas->nzone;
 
 #ifdef _DEBUG_
    printf("Fortran wrapper array fill called\n");
@@ -99,6 +103,14 @@ int influent_fortranwrapperfill_( long *ifn, long *ife, double *x, int *ierr )
    nno = cas->nno;
    nel = cas->nel;
    nfa = cas->nfa;
+
+   // copy zones's bounds
+   for(n=0;n<nz;++n) {
+      izone[4*n+0] = cas->zones[n].nstart;
+      izone[4*n+1] = cas->zones[n].nend;
+      izone[4*n+2] = izone[n*4+1] - izone[n*4+0] + 1;
+      izone[4*n+3] = cas->zones[n].type;
+   }
 
    // copy node coefficients
    for(n=0;n<nno;++n) {
