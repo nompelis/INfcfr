@@ -23,7 +23,8 @@ static struct my_fluentcase fortran_cas;
 //
 
 int inFluent_FortranWrapperInit( char *filename,
-                                 long *nno, long *nel, long *nfa ) {
+                                 long *nno, long *nel, long *nfa )
+{
 
    struct my_fluentcase *cas = &( fortran_cas );
 
@@ -42,7 +43,8 @@ int inFluent_FortranWrapperInit( char *filename,
 
 void influent_fortranwrapperinit_( char *f, long *nno, long *nel, long *nfa,
                                    int *ierr,
-                                   int nf ) {
+                                   int nf )
+{
 #ifdef _DEBUG_
    printf("Fortran wrapper initialization called\n");
    printf(" - Filename: (%d) \"%s\"\n", nf, f );
@@ -70,11 +72,64 @@ int inFluent_FortranWrapperTerm() {
    return(0);
 }
 
-void influent_fortranwrapperterm_( int *ierr ) {
+void influent_fortranwrapperterm_( int *ierr )
+{
 #ifdef _DEBUG_
    printf("Fortran wrapper termination called\n");
 #endif
 
    *ierr = inFluent_FortranWrapperTerm();
 }
+
+
+//
+// Function to wrap the Fortran array transfer procedure
+//
+
+int influent_fortranwrapperfill_( long *ifn, long *ife, double *x, int *ierr )
+{
+   long nno,nel,nfa;
+   struct my_fluentcase *cas = &( fortran_cas );
+   long n;
+
+#ifdef _DEBUG_
+   printf("Fortran wrapper array fill called\n");
+#endif
+
+   nno = cas->nno;
+   nel = cas->nel;
+   nfa = cas->nfa;
+
+   // copy node coefficients
+   for(n=0;n<nno;++n) {
+      x[n*3+0] = cas->x[n];
+      x[n*3+1] = cas->y[n];
+      x[n*3+2] = cas->z[n];
+   }
+
+   // copy face data
+   for(n=0;n<nfa;++n) {
+      ifn[n*5+1] = cas->ifn[n][0];
+      ifn[n*5+2] = cas->ifn[n][1];
+      ifn[n*5+3] = cas->ifn[n][2];
+      ifn[n*5+4] = cas->ifn[n][3];
+      if( cas->ifn[n][3] > 0 ) {
+         ifn[n*5+0] = 4;
+      } else {
+         ifn[n*5+0] = 3;
+      }
+
+      ife[n*2+0] = cas->ife[n][0];
+      ife[n*2+1] = cas->ife[n][1];
+   }
+
+
+#ifdef _DEBUG_
+   printf(" - Done filling arrays \n");
+#endif
+
+   return(0);
+}
+
+
 
