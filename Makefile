@@ -22,8 +22,9 @@ test:
 	$(CC) $(COPTS) -Wl,-rpath=. test.c  -L. -lINfluent
 
 demo:
-	$(FC) $(FOPTS) -Wl,-rpath=. test.f  -L. -lINfluent
+	$(FC) $(FOPTS) -c inMesh_Elements.F
+	$(FC) $(FOPTS) -Wl,-rpath=. test.f inMesh_Elements.o -L. -lINfluent
 
 clean:
-	rm -f *.o *.so *.a a.out 
+	rm -f *.o *.so *.a a.out *.mod
 
