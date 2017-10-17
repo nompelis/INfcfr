@@ -33,7 +33,7 @@ c **************************************************************************/
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** Module to store standard mesh elements
 c *** Created:       IN <nompelis@nobelware.com> 20171006 
-c *** Last modified: IN <nompelis@nobelware.com> 20171016
+c *** Last modified: IN <nompelis@nobelware.com> 20171017
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Module inMesh_Elements
 c      Use iso_c_binding
@@ -71,7 +71,16 @@ c      Use ISO_FORTRAN_ENV
           Integer(kind=2) :: fc(5)
        End Type
 
-       Type inMesh_Prizm_t
+       Type inMesh_Wedge_t
+          !--- Global face numbers
+          Integer(kind=8) :: f1,f2,f3,f4,f5
+
+          !--- Global node numbers
+          Integer(kind=8) :: n1,n2,n3,n4,n5,n6
+
+          !--- Convention of the faces
+          !--- DESCRIPTION NEEDED
+          Integer(kind=2) :: fc(5)
        End Type
 
        Type inMesh_Brick_t
@@ -663,34 +672,361 @@ c --- Assign returned structures
        End subroutine
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c *** Routine to form a prizm cell element from two triangles and two quads.
+c *** Routine to form a wedge cell element from three triangles and two quads.
 c *** This routine assumes that what is passed in "ifn" are _valid_ surf. elems.
 c *** (Definitions on the validity of surface elements are found in my notes.)
 c *** Created:       IN <nompelis@nobelware.com> 20171014
-c *** Last modified: IN <nompelis@nobelware.com> 20171014
+c *** Last modified: IN <nompelis@nobelware.com> 20171017
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 #define _DEBUG_
-       Subroutine inMesh_Elements_FormPrizmFromFaces(
+       Subroutine inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, iefi,
      &                  ieno, iefo, ierr )
        Implicit None
        Integer(kind=4), intent(OUT) :: ierr
        Integer(kind=8), intent(IN) :: nfa,i
        Integer(kind=8), intent(IN) :: ifn(0:4,nfa),ife(2,nfa)
-       Integer(kind=8), intent(IN) :: iefi(0:4)
+       Integer(kind=8), intent(IN) :: iefi(0:5)
 c --- Variables to return to what would be a numerical solver that is aware
 c --- of the conventions used.
-       Integer(kind=8), intent(OUT) :: ieno(0:8),iefo(0:4)
+       Integer(kind=8), intent(OUT) :: ieno(0:8),iefo(0:5)
 c --- Internal variable for this example
-       Type(inMesh_Prizm_t) :: pri
+       Type(inMesh_Wedge_t) :: wed
+       Integer(kind=8) :: j1,j2,j3,j4,j5,jj
+       Integer(kind=2) :: k,ik,kk
 
 
-       PRINT*,'Constructing a prizm; number',i
-       PRINT*,'Faces:', iefi(1:4)
-       PRINT*,'NOT YET IMPLEMENTED; EXITING!'
-       STOP
+       PRINT*,'Constructing a wedge; number',i
+       PRINT*,'Faces:', iefi(1:5)
+
+c --- Ssanity checks
+       if( iefi(0) .ne. 5 )then
+          PRINT*,'Not a wedge (does not have 5 faces)'
+          ierr = 1
+          return
+       endif
+
+       if( (iefi(1) .le. 0 .OR. iefi(1) .gt. nfa) .OR.
+     &     (iefi(2) .le. 0 .OR. iefi(2) .gt. nfa) .OR.
+     &     (iefi(3) .le. 0 .OR. iefi(3) .gt. nfa) .OR.
+     &     (iefi(4) .le. 0 .OR. iefi(4) .gt. nfa) .OR.
+     &     (iefi(5) .le. 0 .OR. iefi(5) .gt. nfa) ) then
+          PRINT*,'Face numbers out of bounds'
+          ierr = 2
+          return
+       endif
 
 
+       j1 = -1
+       j2 = -1
+       j3 = -1
+       j4 = -1
+       j5 = -1
+
+       wed%n1 = 0
+       wed%n2 = 0
+       wed%n3 = 0
+       wed%n4 = 0
+       wed%n5 = 0
+       wed%n6 = 0
+
+       wed%f1 = 0
+       wed%f2 = 0
+       wed%f3 = 0
+       wed%f4 = 0
+       wed%f5 = 0
+
+       wed%fc(:) = 0
+
+c --- Select the first 3-node face of the wedge to be face 1 (the base)
+c --- Copy node numbers and face number
+c --- By convention (as in Fluent case files), right is where the thumb points
+c --- when listing nodes by a right-hand rule.
+c --- By a starting choice we set the face-convention flag to +1 or -1
+       do jj = 1,iefi(0)
+          if( j1 .eq. -1 ) then
+             if( ifn(0, iefi(jj) ) .eq. 3 ) j1 = jj
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'First face is number ',j1
+#endif
+       wed%f1 = j1               ! set 1st face
+       if( ife(2,j1) .eq. i ) then      ! triangle's "right" cell is the wedge
+          PRINT*,'Wedge is on the right of face 1'
+          wed%n1 = ifn(1, j1 )   ! set 1st node
+          wed%n2 = ifn(2, j1 )   ! set 2nd node
+          wed%n3 = ifn(3, j1 )   ! set 3rd node
+          wed%fc(1) = -1         ! edge number and direction (sign)
+       else
+          PRINT*,'Wedge is on the left of face 1'
+          wed%n1 = ifn(2, j1 )   ! set 1st node
+          wed%n2 = ifn(1, j1 )   ! set 2nd node
+          wed%n3 = ifn(3, j1 )   ! set 3rd node
+          wed%fc(1) = +1         ! edge number and direction (sign)
+       endif
+#ifdef _DEBUG_
+       PRINT*,'First face nodes:',wed%n1,wed%n2,wed%n3
+#endif
+
+c --- Find face 3; look for 2 matching nodes for n1,n2 of the wedge
+c --- Determine orientation of face 3 (using ife); set conventions
+c --- Also set 4th,5th node of the wedge
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',wed%n1,wed%n2
+#endif
+       j3 = -1                   ! undefined number
+       do k = 1,5                ! loop over all faces
+          jj = iefi(k)           ! face number
+
+          if( jj .ne. j1 ) then  ! exclude the wedge's first (base) face
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             ik = 0              ! number of nodes matched for this trial face
+             do kk = 1,ifn(0,jj) ! loop over all the trial face's nodes
+                if( ifn(kk,jj) .eq. wed%n1 ) ik = ik + 1
+                if( ifn(kk,jj) .eq. wed%n2 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+             enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+             if( ik .eq. 2 ) then
+                j3 = jj
+             endif
+
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 3 as:',j3
+       PRINT*,' Left/right elems:',ife(:,j3)
+#endif
+
+       if( ife(1,j3) .eq. i ) then    ! wedge is left
+          wed%fc(3) = +1              ! preliminary edge direction (sign)
+          wed%n5 = ifn(3,j3)
+          wed%n4 = ifn(4,j3)
+          if( ifn(4,j3) .eq. wed%n1 ) then
+             wed%fc(3) = +2           ! correct edge direction (sign)
+             wed%n5 = ifn(2,j3)
+             wed%n4 = ifn(3,j3)
+          endif
+          if( ifn(3,j3) .eq. wed%n1 ) then
+             wed%fc(3) = +3           ! correct edge direction (sign)
+             wed%n5 = ifn(1,j3)
+             wed%n4 = ifn(2,j3)
+          endif
+          if( ifn(2,j3) .eq. wed%n1 ) then
+             wed%fc(3) = +4           ! correct edge direction (sign)
+             wed%n5 = ifn(4,j3)
+             wed%n4 = ifn(1,j3)
+          endif
+       else                           ! wedge is right
+          wed%fc(3) = -1              ! preliminary edge direction (sign)
+          wed%n4 = ifn(3,j3)
+          wed%n5 = ifn(4,j3)
+          if( ifn(1,j3) .eq. wed%n1 ) then
+             wed%fc(3) = -2           ! correct edge direction (sign)
+             wed%n4 = ifn(2,j3)
+             wed%n5 = ifn(3,j3)
+          endif
+          if( ifn(4,j3) .eq. wed%n1 ) then
+             wed%fc(3) = -3           ! correct edge direction (sign)
+             wed%n4 = ifn(1,j3)
+             wed%n5 = ifn(2,j3)
+          endif
+          if( ifn(3,j3) .eq. wed%n1 ) then
+             wed%fc(3) = -4           ! correct edge direction (sign)
+             wed%n4 = ifn(4,j3)
+             wed%n5 = ifn(1,j3)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 3 convention:',wed%fc(3)
+#endif
+
+c --- Find face 2; look for 2 matching nodes for n4,n5 of the wedge
+c --- Determine orientation of face 2 (using ife); set conventions
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',wed%n4,wed%n5
+#endif
+       j2 = -1                   ! undefined number
+       do k = 1,5                ! loop over all faces
+          jj = iefi(k)           ! face number
+
+          if( jj .ne. j3 ) then  ! exclude the wedge's f3
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             ik = 0              ! number of nodes matched for this trial face
+             do kk = 1,ifn(0,jj) ! loop over all the trial face's nodes
+                if( ifn(kk,jj) .eq. wed%n4 ) ik = ik + 1
+                if( ifn(kk,jj) .eq. wed%n5 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+             enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+             if( ik .eq. 2 ) then
+                j2 = jj
+             endif
+
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 2 as:',j2
+#endif
+       do kk = 1,3            ! loop over 2nd face's nodes (always 3)
+          if( ifn(kk,j2) .ne. wed%n4 .AND.  ifn(kk,j2) .ne. wed%n5 ) then
+             wed%n6 = ifn(kk,j2)
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,' Assigned sixth node of wedge:',wed%n6
+       PRINT*,' Left/right elems:',ife(:,j2)
+#endif
+
+       if( ife(1,j2) .eq. i ) then    ! wedge is left
+          wed%fc(2) = +1              ! preliminary edge direction (sign)
+          if( ifn(3,j2) .eq. wed%n4 ) then
+             wed%fc(2) = +2           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j2) .eq. wed%n4 ) then
+             wed%fc(2) = +3           ! correct edge direction (sign)
+          endif
+       else
+          wed%fc(2) = -1              ! preliminary edge direction (sign)
+          if( ifn(3,j2) .eq. wed%n4 ) then
+             wed%fc(2) = -2           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j2) .eq. wed%n4 ) then
+             wed%fc(2) = -3           ! correct edge direction (sign)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 2 convention:',wed%fc(2)
+#endif
+
+c --- Find face 4; look for 2 matching nodes for n2,n3 of the wedge
+c --- Determine orientation of face 4 (using ife); set conventions
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',wed%n2,wed%n3
+#endif
+       j4 = -1                   ! undefined number
+       do k = 1,5                ! loop over all faces
+          jj = iefi(k)           ! face number
+
+          if( jj .ne. j1 ) then  ! exclude the wedge's f1
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             ik = 0              ! number of nodes matched for this trial face
+             do kk = 1,ifn(0,jj) ! loop over all the trial face's nodes
+                if( ifn(kk,jj) .eq. wed%n2 ) ik = ik + 1
+                if( ifn(kk,jj) .eq. wed%n3 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+             enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+             if( ik .eq. 2 ) then
+                j4 = jj
+             endif
+
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 4 as:',j4
+#endif
+
+       if( ife(1,j4) .eq. i ) then    ! wedge is left
+          wed%fc(4) = +1              ! preliminary edge direction (sign)
+          if( ifn(4,j4) .eq. wed%n2 ) then
+             wed%fc(4) = +2           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j4) .eq. wed%n2 ) then
+             wed%fc(4) = +3           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j4) .eq. wed%n2 ) then
+             wed%fc(4) = +4           ! correct edge direction (sign)
+          endif
+       else                           ! wedge is right
+          wed%fc(4) = -1              ! preliminary edge direction (sign)
+          if( ifn(1,j4) .eq. wed%n2 ) then
+             wed%fc(4) = -2           ! correct edge direction (sign)
+          endif
+          if( ifn(4,j4) .eq. wed%n2 ) then
+             wed%fc(4) = -3           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j4) .eq. wed%n2 ) then
+             wed%fc(4) = -4           ! correct edge direction (sign)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 4 convention:',wed%fc(4)
+#endif
+
+c --- Find face 5; look for which face is un-assigned
+c --- Determine orientation of face 5 (using ife); set conventions
+       j5 = -1                   ! undefined number
+       do k = 1,5                ! loop over all faces
+          jj = iefi(k)           ! face number
+
+          if( jj .ne. j1 .AND. jj .ne. j2 .AND.
+     &        jj .ne. j3 .AND. jj .ne. j4 ) j5 = jj
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 5 as:',j5
+#endif
+
+       if( ife(1,j5) .eq. i ) then    ! wedge is left
+          wed%fc(5) = +1              ! preliminary edge direction (sign)
+          if( ifn(4,j5) .eq. wed%n3 ) then
+             wed%fc(5) = +2           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j5) .eq. wed%n3 ) then
+             wed%fc(5) = +3           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j5) .eq. wed%n3 ) then
+             wed%fc(5) = +4           ! correct edge direction (sign)
+          endif
+       else                           ! wedge is right
+          wed%fc(4) = -1              ! preliminary edge direction (sign)
+          if( ifn(1,j5) .eq. wed%n3 ) then
+             wed%fc(5) = -2           ! correct edge direction (sign)
+          endif
+          if( ifn(4,j5) .eq. wed%n3 ) then
+             wed%fc(5) = -3           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j5) .eq. wed%n3 ) then
+             wed%fc(5) = -4           ! correct edge direction (sign)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 5 convention:',wed%fc(5)
+#endif
+
+c --- Assign returned structures
+       ieno(0) = 6
+       ieno(1) = wed%n1
+       ieno(2) = wed%n2
+       ieno(3) = wed%n3
+       ieno(4) = wed%n4
+       ieno(5) = wed%n5
+       ieno(6) = wed%n6
+       iefo(0) = 5
+       iefo(1) = j1
+       iefo(2) = j2
+       iefo(3) = j3
+       iefo(4) = j4
+       iefo(5) = j5
 
        End subroutine
 
