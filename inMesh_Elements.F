@@ -676,7 +676,7 @@ c *** Routine to form a wedge cell element from three triangles and two quads.
 c *** This routine assumes that what is passed in "ifn" are _valid_ surf. elems.
 c *** (Definitions on the validity of surface elements are found in my notes.)
 c *** Created:       IN <nompelis@nobelware.com> 20171014
-c *** Last modified: IN <nompelis@nobelware.com> 20171017
+c *** Last modified: IN <nompelis@nobelware.com> 20171021
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 #define _DEBUG_
        Subroutine inMesh_Elements_FormWedgeFromFaces(
@@ -901,10 +901,10 @@ c --- Determine orientation of face 2 (using ife); set conventions
           endif
        else
           wed%fc(2) = -1              ! preliminary edge direction (sign)
-          if( ifn(3,j2) .eq. wed%n4 ) then
+          if( ifn(1,j2) .eq. wed%n4 ) then
              wed%fc(2) = -2           ! correct edge direction (sign)
           endif
-          if( ifn(2,j2) .eq. wed%n4 ) then
+          if( ifn(3,j2) .eq. wed%n4 ) then
              wed%fc(2) = -3           ! correct edge direction (sign)
           endif
        endif
