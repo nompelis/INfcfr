@@ -95,7 +95,7 @@ c *** NOTE: At this point in the development process I am testing for tets and
 c *** I have a _hardwired_ tet-cell output testing code block.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171016
+c *** Last modified: IN <nompelis@nobelware.com> 20171021
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x)
       Use inMesh_Elements
@@ -185,7 +185,7 @@ c--- form individual volume elements (cells) from surface elements
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
-            call inMesh_Elements_FormPrizmFromFaces(
+            call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
          else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
