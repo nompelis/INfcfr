@@ -33,7 +33,7 @@ c **************************************************************************/
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** Module to store standard mesh elements
 c *** Created:       IN <nompelis@nobelware.com> 20171006 
-c *** Last modified: IN <nompelis@nobelware.com> 20171017
+c *** Last modified: IN <nompelis@nobelware.com> 20171022
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Module inMesh_Elements
 c      Use iso_c_binding
@@ -47,7 +47,7 @@ c      Use ISO_FORTRAN_ENV
           Integer(kind=8) :: n1,n2,n3,n4
 
           !--- Convention of the faces
-          !--- "Any face of the tetrahedron's 1-4 can be any triangle and it
+          !--- Any face of the tetrahedron's 1-4 can be any triangle and it
           !--- can have any of three positive or negative alignments. Positive
           !--- numbers imply outward pointing normals. Permutations of 1,2,3
           !--- imply deviations from the "cannonical" alignment.
@@ -62,7 +62,7 @@ c      Use ISO_FORTRAN_ENV
           Integer(kind=8) :: n1,n2,n3,n4,n5
 
           !--- Convention of the faces
-          !--- "The base of the pyramid's can only be a quadrilateral (4 nodes)
+          !--- The base of the pyramid's can only be a quadrilateral (4 nodes)
           !--- and its face convention is (by construction) -1 or +1. The
           !--- remaining four faces 2-5 are triangles and can have any of three
           !--- possible alignments. Positive numbers imply outward-pointing
@@ -79,7 +79,13 @@ c      Use ISO_FORTRAN_ENV
           Integer(kind=8) :: n1,n2,n3,n4,n5,n6
 
           !--- Convention of the faces
-          !--- DESCRIPTION NEEDED
+          !--- The base of the wegde is the first triangle encountered in the
+          !--- input list of surface elements and its face convention is (by
+          !--- construction) -1 or +1. The remaining faces can have any of
+          !--- three possible alignemnts for the top face and four possible
+          !--- alignments for the lateral quadrilaterals. Positive numbers imply
+          !--- outward-pointing normals. permutations of 1,2,3 or 4 imply
+          !--- deviations from the "cannonical" alignment.
           Integer(kind=2) :: fc(5)
        End Type
 
@@ -676,7 +682,7 @@ c *** Routine to form a wedge cell element from three triangles and two quads.
 c *** This routine assumes that what is passed in "ifn" are _valid_ surf. elems.
 c *** (Definitions on the validity of surface elements are found in my notes.)
 c *** Created:       IN <nompelis@nobelware.com> 20171014
-c *** Last modified: IN <nompelis@nobelware.com> 20171021
+c *** Last modified: IN <nompelis@nobelware.com> 20171022
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 #define _DEBUG_
        Subroutine inMesh_Elements_FormWedgeFromFaces(
@@ -998,7 +1004,7 @@ c --- Determine orientation of face 5 (using ife); set conventions
              wed%fc(5) = +4           ! correct edge direction (sign)
           endif
        else                           ! wedge is right
-          wed%fc(4) = -1              ! preliminary edge direction (sign)
+          wed%fc(5) = -1              ! preliminary edge direction (sign)
           if( ifn(1,j5) .eq. wed%n3 ) then
              wed%fc(5) = -2           ! correct edge direction (sign)
           endif
