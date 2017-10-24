@@ -135,8 +135,10 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
+#ifdef _DEBUG_
        PRINT*,'Constructing a tetrahedron; number',i
        PRINT*,'Faces:', iefi(1:4)
+#endif
 
 c --- Ssanity checks
        if( iefi(0) .ne. 4 )then
@@ -180,13 +182,17 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
        j1 = iefi(1)
        tet%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! triangle's "right" face is the tetr.
+#ifdef _DEBUG_
           PRINT*,'Tetrahedron is on the right of face 1'
+#endif
           tet%n1 = ifn(1, j1 )   ! set 1st node
           tet%n2 = ifn(2, j1 )   ! set 2nd node
           tet%n3 = ifn(3, j1 )   ! set 3rd node
           tet%fc(1) = -1         ! edge number and direction (sign)
        else
+#ifdef _DEBUG_
           PRINT*,'Tetrahedron is on the left of face 1'
+#endif
           tet%n1 = ifn(2, j1 )   ! set 1st node is the 2nd one
           tet%n2 = ifn(1, j1 )   ! set 2nd node is the 1st one
           tet%n3 = ifn(3, j1 )   ! set 3rd node is the same
@@ -337,6 +343,12 @@ c --- Determine orientation of face 4 (using ife); set conventions
        PRINT*,'Identified face 4 convention:',tet%fc(4)
 #endif
 
+c --- assign structure members
+       tet%f1 = j1
+       tet%f2 = j2
+       tet%f3 = j3
+       tet%f4 = j4
+
 c --- Assign returned structures
        ieno(0) = 4
        ieno(1) = tet%n1
@@ -375,8 +387,10 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
+#ifdef _DEBUG_
        PRINT*,'Constructing a pyramid; number',i
        PRINT*,'Faces:', iefi(1:5)
+#endif
 
 c --- Ssanity checks
        if( iefi(0) .ne. 5 )then
@@ -429,14 +443,18 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
 #endif
        pyr%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! quad's "right" face is the pyramid
+#ifdef _DEBUG_
           PRINT*,'Pyramid is on the right of face 1'
+#endif
           pyr%n1 = ifn(1, j1 )   ! set 1st node
           pyr%n2 = ifn(2, j1 )   ! set 2nd node
           pyr%n3 = ifn(3, j1 )   ! set 3rd node
           pyr%n4 = ifn(4, j1 )   ! set 4th node
           pyr%fc(1) = -1         ! edge number and direction (sign)
        else
+#ifdef _DEBUG_
           PRINT*,'Pyramid is on the left of face 1'
+#endif
           pyr%n1 = ifn(2, j1 )   ! set 1st node
           pyr%n2 = ifn(1, j1 )   ! set 2nd node
           pyr%n3 = ifn(4, j1 )   ! set 3rd node
@@ -677,6 +695,13 @@ c --- Determine orientation of face 5 (using ife); set conventions
        PRINT*,'Identified face 5 convention:',pyr%fc(5)
 #endif
 
+c --- assign structure members
+       pyr%f1 = j1
+       pyr%f2 = j2
+       pyr%f3 = j3
+       pyr%f4 = j4
+       pyr%f5 = j5
+
 c --- Assign returned structures
        ieno(0) = 5
        ieno(1) = pyr%n1
@@ -717,8 +742,10 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
+#ifdef _DEBUG_
        PRINT*,'Constructing a wedge; number',i
        PRINT*,'Faces:', iefi(1:5)
+#endif
 
 c --- Ssanity checks
        if( iefi(0) .ne. 5 )then
@@ -774,13 +801,17 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
 #endif
        wed%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! triangle's "right" cell is the wedge
+#ifdef _DEBUG_
           PRINT*,'Wedge is on the right of face 1'
+#endif
           wed%n1 = ifn(1, j1 )   ! set 1st node
           wed%n2 = ifn(2, j1 )   ! set 2nd node
           wed%n3 = ifn(3, j1 )   ! set 3rd node
           wed%fc(1) = -1         ! edge number and direction (sign)
        else
+#ifdef _DEBUG_
           PRINT*,'Wedge is on the left of face 1'
+#endif
           wed%n1 = ifn(2, j1 )   ! set 1st node
           wed%n2 = ifn(1, j1 )   ! set 2nd node
           wed%n3 = ifn(3, j1 )   ! set 3rd node
@@ -1034,6 +1065,13 @@ c --- Determine orientation of face 5 (using ife); set conventions
        PRINT*,'Identified face 5 convention:',wed%fc(5)
 #endif
 
+c --- assign structure members
+       wed%f1 = j1
+       wed%f2 = j2
+       wed%f3 = j3
+       wed%f4 = j4
+       wed%f5 = j5
+
 c --- Assign returned structures
        ieno(0) = 6
        ieno(1) = wed%n1
@@ -1075,8 +1113,10 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
+#ifdef _DEBUG_
        PRINT*,'Constructing a brick; number',i
        PRINT*,'Faces:', iefi(1:6)
+#endif
 
 c --- Ssanity checks
        if( iefi(0) .ne. 6 )then
@@ -1132,14 +1172,18 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
 #endif
        bri%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! quad's "right" cell is the brick
+#ifdef _DEBUG_
           PRINT*,'Brick is on the right of face 1'
+#endif
           bri%n1 = ifn(1, j1 )   ! set 1st node
           bri%n2 = ifn(2, j1 )   ! set 2nd node
           bri%n3 = ifn(3, j1 )   ! set 3rd node
           bri%n4 = ifn(4, j1 )   ! set 4th node
           bri%fc(1) = -1         ! edge number and direction (sign)
        else
+#ifdef _DEBUG_
           PRINT*,'Brick is on the left of face 1'
+#endif
           bri%n1 = ifn(2, j1 )   ! set 1st node
           bri%n2 = ifn(1, j1 )   ! set 2nd node
           bri%n3 = ifn(4, j1 )   ! set 3rd node
@@ -1475,6 +1519,14 @@ c --- Determine orientation of face 5 (using ife); set conventions
 #ifdef _DEBUG_
        PRINT*,'Identified face 5 convention:',bri%fc(5)
 #endif
+
+c --- assign structure members
+       bri%f1 = j1
+       bri%f2 = j2
+       bri%f3 = j3
+       bri%f4 = j4
+       bri%f5 = j5
+       bri%f6 = j6
 
 c --- Assign returned structures
        ieno(0) = 8
