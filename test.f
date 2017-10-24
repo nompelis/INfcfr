@@ -126,7 +126,7 @@ c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
       write(10,*) 'variables = x y z'
       write(10,*) 'zone T="Tetrahedra"'
       write(10,*) 'NODES=',nno,', ELEMENTS=',nel
-      write(10,*) 'ET=TETRAHEDRON'
+      write(10,*) 'ET=BRICK'
       write(10,*) 'F=FEPOINT'
       do i = 1,nno
          write(10,*) x(:,i)
@@ -180,14 +180,24 @@ c--- form individual volume elements (cells) from surface elements
             call inMesh_Elements_FormTetrahedronFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- modify nodes to plot as a "brick" element
+            ieno(5:8) = ieno(4)
+            ieno(4) = ieno(3)
          else if( ntri .eq. 4 .AND. nqua .eq. 1 ) then
             call inMesh_Elements_FormPyramidFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- modify nodes to plot as a "brick" element
+            ieno(6:8) = ieno(5)
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- modify nodes to plot as a "brick" element
+            ieno(7:8) = ieno(6)
+            ieno(6) = ieno(5)
+            ieno(5) = ieno(4)
+            ieno(4) = ieno(3)
          else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
             call inMesh_Elements_FormBrickFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
@@ -201,7 +211,7 @@ c--- form individual volume elements (cells) from surface elements
       IF( itest ) THEN
 c--- dump element node-connectivity to the file; this is not generic...
 c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
-         write(10,*) ieno(1:4)
+         write(10,*) ieno(1:8)
       ENDIF
 
       enddo
