@@ -1,6 +1,5 @@
-### Setting compilation mode selects from multiple builds in Mkaefile.comm
+### Setting compilation mode selects from multiple builds in Makefile.comm
 MODE = zero
-MODE = two
 
 include Makefile.comm
 
@@ -9,16 +8,23 @@ COPTS += -DNO_USE_HDF
 LINK_OPTS = -shared -Wl,-soname,$(LIB_NAME).so -o $(LIB_NAME).so 
 AR_OPTS = rsc $(LIB_NAME).a
 
-all: lib test
+COPTS += -D_DEBUG_
+
+all: lib demo
 
 lib:
 	$(CC) $(COPTS) $(HDF_INCLUDE) -c  fluent.c
-	ar $(AR_OPTS) fluent.o
-	$(LD) $(LINK_OPTS) fluent.o $(HDF_LIB)
+	$(CC) $(COPTS) $(HDF_INCLUDE) -c  fluent_fortran.c
+	ar $(AR_OPTS) fluent.o fluent_fortran.o
+	$(LD) $(LINK_OPTS) fluent.o fluent_fortran.o $(HDF_LIB)
 
 test:
 	$(CC) $(COPTS) -Wl,-rpath=. test.c  -L. -lINfluent
 
+demo:
+	$(FC) $(FOPTS) -c inMesh_Elements.F
+	$(FC) $(FOPTS) -Wl,-rpath=. test.f inMesh_Elements.o -L. -lINfluent
+
 clean:
-	rm -f *.o *.so *.a a.out 
+	rm -f *.o *.so *.a a.out *.mod
 
