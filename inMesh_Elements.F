@@ -33,7 +33,7 @@ c **************************************************************************/
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** Module to store standard mesh elements
 c *** Created:       IN <nompelis@nobelware.com> 20171006 
-c *** Last modified: IN <nompelis@nobelware.com> 20171022
+c *** Last modified: IN <nompelis@nobelware.com> 20171024
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Module inMesh_Elements
 c      Use iso_c_binding
@@ -90,6 +90,22 @@ c      Use ISO_FORTRAN_ENV
        End Type
 
        Type inMesh_Brick_t
+          !--- Global face numbers
+          Integer(kind=8) :: f1,f2,f3,f4,f5,f6
+
+          !--- Global node numbers
+          Integer(kind=8) :: n1,n2,n3,n4,n5,n6,n7,n8
+
+          !--- Convention of the faces
+          !--- The base of the brick is the first face encountered in the list
+          !--- and its face convention is (by construction) -1 or +1.
+          !--- The remaining faces can have any of four possible alignemnts.
+          !--- Positive numbers imply  outward-pointing normals. permutations of
+          !--- 1,2,3,4 imply deviations from the "cannonical" alignment.
+          !--- Face numbers for a brick are opposing eachother for sequential
+          !--- odd and even numbers (i.e. 1 is opposite 2). Faces 1 and 2 are
+          !--- the base and top, face 3 has nodes 1 & 2, face 5 has nodes 1 & 4.
+          Integer(kind=2) :: fc(6)
        End Type
 
 
@@ -684,7 +700,6 @@ c *** (Definitions on the validity of surface elements are found in my notes.)
 c *** Created:       IN <nompelis@nobelware.com> 20171014
 c *** Last modified: IN <nompelis@nobelware.com> 20171022
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-#define _DEBUG_
        Subroutine inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, iefi,
      &                  ieno, iefo, ierr )
@@ -1041,7 +1056,7 @@ c *** Routine to form a brick element from six quadrilaterals
 c *** This routine assumes that what is passed in "ifn" are _valid_ surf. elems.
 c *** (Definitions on the validity of surface elements are found in my notes.)
 c *** Created:       IN <nompelis@nobelware.com> 20171014
-c *** Last modified: IN <nompelis@nobelware.com> 20171014
+c *** Last modified: IN <nompelis@nobelware.com> 20171024
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Subroutine inMesh_Elements_FormBrickFromFaces(
      &                  nfa, ifn, ife, i, iefi,
@@ -1050,20 +1065,434 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Integer(kind=4), intent(OUT) :: ierr
        Integer(kind=8), intent(IN) :: nfa,i
        Integer(kind=8), intent(IN) :: ifn(0:4,nfa),ife(2,nfa)
-       Integer(kind=8), intent(IN) :: iefi(0:4)
+       Integer(kind=8), intent(IN) :: iefi(0:6)
 c --- Variables to return to what would be a numerical solver that is aware
 c --- of the conventions used.
-       Integer(kind=8), intent(OUT) :: ieno(0:8),iefo(0:4)
+       Integer(kind=8), intent(OUT) :: ieno(0:8),iefo(0:6)
 c --- Internal variable for this example
        Type(inMesh_Brick_t) :: bri
+       Integer(kind=8) :: j1,j2,j3,j4,j5,j6,jj
+       Integer(kind=2) :: k,ik,kk
 
 
        PRINT*,'Constructing a brick; number',i
-       PRINT*,'Faces:', iefi(1:4)
-       PRINT*,'NOT YET IMPLEMENTED; EXITING!'
-       STOP
+       PRINT*,'Faces:', iefi(1:6)
 
+c --- Ssanity checks
+       if( iefi(0) .ne. 6 )then
+          PRINT*,'Not a brick (does not have 6 faces)'
+          ierr = 1
+          return
+       endif
 
+       if( (iefi(1) .le. 0 .OR. iefi(1) .gt. nfa) .OR.
+     &     (iefi(2) .le. 0 .OR. iefi(2) .gt. nfa) .OR.
+     &     (iefi(3) .le. 0 .OR. iefi(3) .gt. nfa) .OR.
+     &     (iefi(4) .le. 0 .OR. iefi(4) .gt. nfa) .OR.
+     &     (iefi(5) .le. 0 .OR. iefi(5) .gt. nfa) .OR.
+     &     (iefi(6) .le. 0 .OR. iefi(6) .gt. nfa) ) then
+          PRINT*,'Face numbers out of bounds'
+          ierr = 2
+          return
+       endif
+
+       j1 = -1
+       j2 = -1
+       j3 = -1
+       j4 = -1
+       j5 = -1
+       j6 = -1
+
+       bri%n1 = 0
+       bri%n2 = 0
+       bri%n3 = 0
+       bri%n4 = 0
+       bri%n5 = 0
+       bri%n6 = 0
+       bri%n7 = 0
+       bri%n8 = 0
+
+       bri%f1 = 0
+       bri%f2 = 0
+       bri%f3 = 0
+       bri%f4 = 0
+       bri%f5 = 0
+       bri%f6 = 0
+
+       bri%fc(:) = 0
+
+c --- Select the first face of the brick to be face 1 (the base)
+c --- Copy node numbers and face number
+c --- By convention (as in Fluent case files), right is where the thumb points
+c --- when listing nodes by a right-hand rule.
+c --- By a starting choice we set the face-convention flag to +1 or -1
+       j1 = iefi(1)
+#ifdef _DEBUG_
+       PRINT*,'First face is number ',j1
+#endif
+       bri%f1 = j1               ! set 1st face
+       if( ife(2,j1) .eq. i ) then      ! quad's "right" cell is the brick
+          PRINT*,'Brick is on the right of face 1'
+          bri%n1 = ifn(1, j1 )   ! set 1st node
+          bri%n2 = ifn(2, j1 )   ! set 2nd node
+          bri%n3 = ifn(3, j1 )   ! set 3rd node
+          bri%n4 = ifn(4, j1 )   ! set 4th node
+          bri%fc(1) = -1         ! edge number and direction (sign)
+       else
+          PRINT*,'Brick is on the left of face 1'
+          bri%n1 = ifn(2, j1 )   ! set 1st node
+          bri%n2 = ifn(1, j1 )   ! set 2nd node
+          bri%n3 = ifn(4, j1 )   ! set 3rd node
+          bri%n4 = ifn(3, j1 )   ! set 4th node
+          bri%fc(1) = +1         ! edge number and direction (sign)
+       endif
+#ifdef _DEBUG_
+       PRINT*,'First face nodes:',bri%n1,bri%n2,bri%n3,bri%n4
+#endif
+
+c --- Find face 3; look for 2 matching nodes for n1,n2 of the brick
+c --- Determine orientation of face 3 (using ife); set conventions
+c --- Also set 5th,6th node of the brick
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',bri%n1,bri%n2
+#endif
+       j3 = -1                   ! undefined number
+       do k = 2,6                ! loop over remaining faces
+          jj = iefi(k)           ! face number
+
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+          ik = 0                 ! number of nodes matched for this trial face
+          do kk = 1,4            ! loop over all the trial face's nodes
+             if( ifn(kk,jj) .eq. bri%n1 ) ik = ik + 1
+             if( ifn(kk,jj) .eq. bri%n2 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+          enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+          if( ik .eq. 2 ) then
+             j3 = jj
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 3 as:',j3
+       PRINT*,' Left/right elems:',ife(:,j3)
+#endif
+
+       if( ife(1,j3) .eq. i ) then    ! brick is left
+          bri%fc(3) = +1              ! preliminary edge direction (sign)
+          bri%n6 = ifn(3,j3)
+          bri%n5 = ifn(4,j3)
+          if( ifn(4,j3) .eq. bri%n1 ) then
+             bri%fc(3) = +2           ! correct edge direction (sign)
+             bri%n6 = ifn(2,j3)
+             bri%n5 = ifn(3,j3)
+          endif
+          if( ifn(3,j3) .eq. bri%n1 ) then
+             bri%fc(3) = +3           ! correct edge direction (sign)
+             bri%n6 = ifn(1,j3)
+             bri%n5 = ifn(2,j3)
+          endif
+          if( ifn(2,j3) .eq. bri%n1 ) then
+             bri%fc(3) = +4           ! correct edge direction (sign)
+             bri%n6 = ifn(4,j3)
+             bri%n5 = ifn(1,j3)
+          endif
+       else                           ! brick is right
+          bri%fc(3) = -1              ! preliminary edge direction (sign)
+          bri%n5 = ifn(3,j3)
+          bri%n6 = ifn(4,j3)
+          if( ifn(1,j3) .eq. bri%n1 ) then
+             bri%fc(3) = -2           ! correct edge direction (sign)
+             bri%n5 = ifn(2,j3)
+             bri%n6 = ifn(3,j3)
+          endif
+          if( ifn(4,j3) .eq. bri%n1 ) then
+             bri%fc(3) = -3           ! correct edge direction (sign)
+             bri%n5 = ifn(1,j3)
+             bri%n6 = ifn(2,j3)
+          endif
+          if( ifn(3,j3) .eq. bri%n1 ) then
+             bri%fc(3) = -4           ! correct edge direction (sign)
+             bri%n5 = ifn(4,j3)
+             bri%n6 = ifn(1,j3)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 3 convention:',bri%fc(3)
+#endif
+
+c --- Find face 2; look for 2 matching nodes for n5,n6 of the brick
+c --- Determine orientation of face 2 (using ife); set conventions
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',bri%n5,bri%n6
+#endif
+       j2 = -1                   ! undefined number
+       do k = 2,6                ! loop over faces other than face 1
+          jj = iefi(k)           ! face number
+
+          if( jj .ne. j3 ) then  ! exclude the brick's f3
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             ik = 0              ! number of nodes matched for this trial face
+             do kk = 1,4         ! loop over all the trial face's nodes
+                if( ifn(kk,jj) .eq. bri%n5 ) ik = ik + 1
+                if( ifn(kk,jj) .eq. bri%n6 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+             enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+             if( ik .eq. 2 ) then
+                j2 = jj
+             endif
+
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 2 as:',j2
+       PRINT*,' Left/right elems:',ife(:,j2)
+#endif
+
+       if( ife(1,j2) .eq. i ) then    ! brick is left
+          bri%fc(2) = +1              ! preliminary edge direction (sign)
+          bri%n7 = ifn(3,j2)
+          bri%n8 = ifn(4,j2)
+          if( ifn(4,j2) .eq. bri%n5 ) then
+             bri%fc(2) = +2           ! correct edge direction (sign)
+             bri%n7 = ifn(2,j2)
+             bri%n8 = ifn(3,j2)
+          endif
+          if( ifn(3,j2) .eq. bri%n5 ) then
+             bri%fc(2) = +3           ! correct edge direction (sign)
+             bri%n7 = ifn(1,j2)
+             bri%n8 = ifn(2,j2)
+          endif
+          if( ifn(2,j2) .eq. bri%n5 ) then
+             bri%fc(2) = +4           ! correct edge direction (sign)
+             bri%n7 = ifn(4,j2)
+             bri%n8 = ifn(1,j2)
+          endif
+       else
+          bri%fc(2) = -1              ! preliminary edge direction (sign)
+          bri%n8 = ifn(3,j2)
+          bri%n7 = ifn(4,j2)
+          if( ifn(1,j2) .eq. bri%n5 ) then
+             bri%fc(2) = -2           ! correct edge direction (sign)
+             bri%n8 = ifn(2,j2)
+             bri%n7 = ifn(3,j2)
+          endif
+          if( ifn(4,j2) .eq. bri%n5 ) then
+             bri%fc(2) = -3           ! correct edge direction (sign)
+             bri%n8 = ifn(1,j2)
+             bri%n7 = ifn(2,j2)
+          endif
+          if( ifn(3,j2) .eq. bri%n5 ) then
+             bri%fc(2) = -4           ! correct edge direction (sign)
+             bri%n8 = ifn(4,j2)
+             bri%n7 = ifn(1,j2)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 2 convention:',bri%fc(2)
+#endif
+
+c --- Find face 4; look for 2 matching nodes for n7,n8 of the brick
+c --- Determine orientation of face 4 (using ife); set conventions
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',bri%n5,bri%n6
+#endif
+       j4 = -1                   ! undefined number
+       do k = 2,6                ! loop over faces other than face 1
+          jj = iefi(k)           ! face number
+
+          if( jj.ne.j1 .AND. jj.ne.j2 ) then  ! exclude the brick's f1 or f2
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             ik = 0              ! number of nodes matched for this trial face
+             do kk = 1,4         ! loop over all the trial face's nodes
+                if( ifn(kk,jj) .eq. bri%n7 ) ik = ik + 1
+                if( ifn(kk,jj) .eq. bri%n8 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+             enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+             if( ik .eq. 2 ) then
+                j4 = jj
+             endif
+
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 4 as:',j4
+       PRINT*,' Left/right elems:',ife(:,j4)
+#endif
+
+       if( ife(1,j4) .eq. i ) then    ! brick is left
+          bri%fc(4) = +1              ! preliminary edge direction (sign)
+          if( ifn(4,j4) .eq. bri%n3 ) then
+             bri%fc(4) = +2           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j4) .eq. bri%n3 ) then
+             bri%fc(4) = +3           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j4) .eq. bri%n3 ) then
+             bri%fc(4) = +4           ! correct edge direction (sign)
+          endif
+       else
+          bri%fc(4) = -1              ! preliminary edge direction (sign)
+          if( ifn(1,j4) .eq. bri%n3 ) then
+             bri%fc(4) = -2           ! correct edge direction (sign)
+          endif
+          if( ifn(4,j4) .eq. bri%n3 ) then
+             bri%fc(4) = -3           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j4) .eq. bri%n3 ) then
+             bri%fc(4) = -4           ! correct edge direction (sign)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 4 convention:',bri%fc(4)
+#endif
+
+c --- Find face 6; look for 2 matching nodes for n2,n3 of the brick
+c --- Determine orientation of face 6 (using ife); set conventions
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',bri%n2,bri%n3
+#endif
+       j6 = -1                   ! undefined number
+       do k = 2,6                ! loop over faces other than face 1
+          jj = iefi(k)           ! face number
+
+          if( jj.ne.j3 .AND. jj.ne.j4 ) then  ! exclude the brick's f3 or f4
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             ik = 0              ! number of nodes matched for this trial face
+             do kk = 1,4         ! loop over all the trial face's nodes
+                if( ifn(kk,jj) .eq. bri%n2 ) ik = ik + 1
+                if( ifn(kk,jj) .eq. bri%n3 ) ik = ik + 1
+#ifdef _DEBUG_
+       PRINT*,'Node:',kk,ifn(kk,jj)
+#endif
+             enddo
+#ifdef _DEBUG_
+       PRINT*,'After testing ik=',ik
+#endif
+             if( ik .eq. 2 ) then
+                j6 = jj
+             endif
+
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 6 as:',j6
+       PRINT*,' Left/right elems:',ife(:,j6)
+#endif
+
+       if( ife(1,j6) .eq. i ) then    ! brick is left
+          bri%fc(6) = +1              ! preliminary edge direction (sign)
+          if( ifn(4,j6) .eq. bri%n2 ) then
+             bri%fc(6) = +2           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j6) .eq. bri%n2 ) then
+             bri%fc(6) = +3           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j6) .eq. bri%n2 ) then
+             bri%fc(6) = +4           ! correct edge direction (sign)
+          endif
+       else
+          bri%fc(6) = -1              ! preliminary edge direction (sign)
+          if( ifn(1,j6) .eq. bri%n2 ) then
+             bri%fc(6) = -2           ! correct edge direction (sign)
+          endif
+          if( ifn(4,j6) .eq. bri%n2 ) then
+             bri%fc(6) = -3           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j6) .eq. bri%n2 ) then
+             bri%fc(6) = -4           ! correct edge direction (sign)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 6 convention:',bri%fc(6)
+#endif
+
+c --- Find face 5; look for the face that is un-attached
+c --- Determine orientation of face 5 (using ife); set conventions
+#ifdef _DEBUG_
+       PRINT*,'Will match nodes:',bri%n2,bri%n3
+#endif
+       j5 = -1                   ! undefined number
+       do k = 2,6                ! loop over faces other than face 1
+          jj = iefi(k)           ! face number
+
+          if( jj.ne.j2 .AND. jj.ne.j3 .AND. jj.ne.j4 .AND. jj.ne.j6 ) then
+#ifdef _DEBUG_
+       PRINT*,'Trial face:',k,jj
+#endif
+             j5 = jj
+          endif
+       enddo
+#ifdef _DEBUG_
+       PRINT*,'Identified face 5 as:',j5
+       PRINT*,' Left/right elems:',ife(:,j5)
+#endif
+
+       if( ife(1,j5) .eq. i ) then    ! brick is left
+          bri%fc(5) = +1              ! preliminary edge direction (sign)
+          if( ifn(4,j5) .eq. bri%n4 ) then
+             bri%fc(5) = +2           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j5) .eq. bri%n4 ) then
+             bri%fc(5) = +3           ! correct edge direction (sign)
+          endif
+          if( ifn(2,j5) .eq. bri%n4 ) then
+             bri%fc(5) = +4           ! correct edge direction (sign)
+          endif
+       else
+          bri%fc(5) = -1              ! preliminary edge direction (sign)
+          if( ifn(1,j5) .eq. bri%n4 ) then
+             bri%fc(5) = -2           ! correct edge direction (sign)
+          endif
+          if( ifn(4,j5) .eq. bri%n4 ) then
+             bri%fc(5) = -3           ! correct edge direction (sign)
+          endif
+          if( ifn(3,j5) .eq. bri%n4 ) then
+             bri%fc(5) = -4           ! correct edge direction (sign)
+          endif
+       endif
+#ifdef _DEBUG_
+       PRINT*,'Identified face 5 convention:',bri%fc(5)
+#endif
+
+c --- Assign returned structures
+       ieno(0) = 8
+       ieno(1) = bri%n1
+       ieno(2) = bri%n2
+       ieno(3) = bri%n3
+       ieno(4) = bri%n4
+       ieno(5) = bri%n5
+       ieno(6) = bri%n6
+       ieno(7) = bri%n7
+       ieno(8) = bri%n8
+       iefo(0) = 6
+       iefo(1) = j1
+       iefo(2) = j2
+       iefo(3) = j3
+       iefo(4) = j4
+       iefo(5) = j5
+       iefo(6) = j6
 
        End subroutine
 
