@@ -35,3 +35,21 @@ http://nobelware.com/
 
 IN 2016/09/22
 
+
+A Fortran interface to the library and a driver code to illustrate how to use
+this library API from a Fortran code have been added. Doing 'make lib' will
+build the library. Doing 'make test' will build a C driver code to read a file
+named "grid.cas" and make TecPlot style files of all face-groups in the case
+file. Doing 'make' will build the library and compile the Fortran driver
+called "test.f" to an executable. The executable opens a file called "grid.cas"
+and makes a TecPlot-style file of all cells (volume elements). This demo uses
+an excerpt of a separate library that constructs volume elements; this code is
+included in this bundle.
+
+The Fortran demonstration driver along with the element library code can be used
+to directly build a serial or shared-memory parallel (OpenMP/POSIX threaded)
+numerical solver. To do this, one needs to be build on top of the "make_cells()"
+subroutine and by forming additional arrays as needed.
+
+IN 2017/10/24
+
