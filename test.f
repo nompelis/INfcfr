@@ -95,7 +95,7 @@ c *** NOTE: At this point in the development process I am testing for tets and
 c *** I have a _hardwired_ tet-cell output testing code block.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171021
+c *** Last modified: IN <nompelis@nobelware.com> 20171024
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x)
       Use inMesh_Elements
@@ -111,7 +111,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),allocatable,dimension(:,:) :: ief,ien
       Integer(kind=8) :: i,j,k
       Integer(kind=8) :: ntri,nqua
-      Integer(kind=8) :: ieno(0:8),iefo(0:4)
+      Integer(kind=8) :: ieno(0:8),iefo(0:8)
       Logical, parameter :: itest = .TRUE.
 
 
