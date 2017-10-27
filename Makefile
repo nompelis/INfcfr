@@ -10,7 +10,7 @@ AR_OPTS = rsc $(LIB_NAME).a
 
 COPTS += -D_DEBUG_
 
-all: lib demo
+all: lib demo2
 
 lib:
 	$(CC) $(COPTS) $(HDF_INCLUDE) -c  fluent.c
@@ -24,6 +24,10 @@ test:
 demo:
 	$(FC) $(FOPTS) -c inMesh_Elements.F
 	$(FC) $(FOPTS) -Wl,-rpath=. test.f inMesh_Elements.o -L. -lINfluent
+
+demo2:
+	$(FC) $(FOPTS) -c inMesh_Elements.F
+	$(FC) $(FOPTS) -Wl,-rpath=. test2.f inMesh_Elements.o -L. -lINfluent
 
 clean:
 	rm -f *.o *.so *.a a.out *.mod
