@@ -18,7 +18,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),allocatable,dimension(:,:) :: ief,ien
       Real*8,allocatable,dimension(:,:) :: x
       Integer(kind=4) :: ierr,nz,k
-      Integer(kind=8) :: n,ifnt(0:4)
+      Integer(kind=8) :: n,ifnt(0:4),i
+      Logical, parameter :: itest = .TRUE.
 
 
 c--- read a Fluent case-file and transfer it to arrays
@@ -87,6 +88,26 @@ c--- create arrays to hold cell data
 c--- call a subroutine to create cells
       call make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
 
+      IF( itest ) THEN
+c--- write a tecplot file with all cells; first put the nodes
+c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
+      open(unit=10,file='CELLS.dat',status='unknown',form='formatted')
+      write(10,*) 'variables = x y z'
+      write(10,*) 'zone T="Tetrahedra"'
+      write(10,*) 'NODES=',nno,', ELEMENTS=',nel
+      write(10,*) 'ET=BRICK'
+      write(10,*) 'F=FEPOINT'
+      do n = 1,nno
+         write(10,*) x(:,n)
+      enddo
+
+      do i = 1,nel
+         write(10,*) ien(1:8,i)
+      enddo
+
+      close(10)
+      ENDIF
+
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien )
 
@@ -117,7 +138,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8) :: i,j,k
       Integer(kind=8) :: ntri,nqua
       Integer(kind=8) :: ieno(0:8),iefo(0:8)
-      Logical, parameter :: itest = .TRUE.
+      Logical, parameter :: itest = .FALSE.
 
 
       PRINT*,'Number of cells:',nel
