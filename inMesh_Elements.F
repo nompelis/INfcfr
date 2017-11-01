@@ -33,7 +33,7 @@ c **************************************************************************/
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** Module to store standard mesh elements
 c *** Created:       IN <nompelis@nobelware.com> 20171006 
-c *** Last modified: IN <nompelis@nobelware.com> 20171024
+c *** Last modified: IN <nompelis@nobelware.com> 20171101
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Module inMesh_Elements
 c      Use iso_c_binding
@@ -1545,6 +1545,223 @@ c --- Assign returned structures
        iefo(4) = j4
        iefo(5) = j5
        iefo(6) = j6
+
+       End subroutine
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** Routine to calculate the volume of a tetrahedron given coordinates of
+c *** the four nodes.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20171027
+c *** Last modified: IN <nompelis@nobelware.com> 20171027
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       Subroutine inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x4, vol )
+       Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3)
+       Real*8,intent(OUT) :: vol
+       Real*8 dx1(3),dx2(3),dx3(3)
+
+
+       dx1(:) = x2(:) - x1(:)
+       dx2(:) = x3(:) - x1(:)
+       dx3(:) = x4(:) - x1(:)
+
+       vol = ( dx1(2)*dx2(3) - dx2(2)*dx1(3))*dx3(1) +
+     &       (-dx1(1)*dx2(3) + dx2(1)*dx1(3))*dx3(2) +
+     &       ( dx1(1)*dx2(2) - dx2(1)*dx1(2))*dx3(3)
+       vol = vol / 6.0d0
+
+       End subroutine
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** Routine to calculate the centroid of a tetrahedron given coordinates of
+c *** its four nodes. Uses the rule of an n-dimensional simplex.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20171027
+c *** Last modified: IN <nompelis@nobelware.com> 20171029
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       Subroutine inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x3, x4, xc )
+       Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3)
+       Real*8,intent(OUT) :: xc(3)
+
+
+       xc(:) = (x1(:) + x2(:) + x3(:) + x4(:))*0.25d0
+
+       End subroutine
+
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** Routine to calculate the centroid of a pyramid given coordinates of
+c *** its five nodes. Uses a subdivision into two tetrahedra, which means that
+c *** the node ordering of the pyramidal element must adhere to the convention.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20171029
+c *** Last modified: IN <nompelis@nobelware.com> 20171031
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       Subroutine inMesh_Pyramid_CentroidFromVertices( x1, x2, x3, x4, x5, xc )
+       Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3),x5(3)
+       Real*8,intent(OUT) :: xc(3)
+       Real*8 :: xt(3),dx1(3),dx2(3),dx3(3),v1,v2
+
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x3, x5, xc )
+
+       dx1(:) =  x2(:) - x1(:)
+       dx2(:) =  x3(:) - x1(:)
+       dx3(:) =  x5(:) - x1(:)
+
+       v1 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
+     &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
+     &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 2 3 5',v1
+       PRINT*,'Centroid 1:',xc(:)
+#endif
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x3, x4, x5, xt )
+
+       dx1(:) =  x4(:) - x1(:)
+
+       v2 = ( dx2(2)*dx1(3) - dx1(2)*dx2(3) )*dx3(1) +
+     &      (-dx2(1)*dx1(3) + dx1(1)*dx2(3) )*dx3(2) +
+     &      ( dx2(1)*dx1(2) - dx1(1)*dx2(2) )*dx3(3)
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 3 4 5',v2
+       PRINT*,'Centroid 2:',xt(:)
+#endif
+
+       xc(:) = (xc(:)*v1 + xt(:)*v2)/(v1 + v2)
+#ifdef _DEBUG_
+       PRINT*,'Centroid:',xc(:)
+#endif
+
+       End subroutine
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** Routine to calculate the centroid of a wedge given coordinates of its
+c *** six nodes. Uses a subdivision into three tetrahedra, which means that
+c *** the node ordering of the wedge element must adhere to the convention.
+c *** The choice of internal subdivision to tetrahedra is described in my notes.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20171029
+c *** Last modified: IN <nompelis@nobelware.com> 20171101
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       Subroutine inMesh_Wedge_CentroidFromVertices( x1, x2, x3, x4, x5, x6, xc)
+       Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3),x5(3),x6(3)
+       Real*8,intent(OUT) :: xc(3)
+       Real*8 :: xt(3),v1,v2,v3
+C      Real*8 :: dx1(3),dx2(3),dx3(3)   ! for slightly less arithm. computation
+
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x3, x4, xc )
+C      dx1(:) =  x2(:) - x1(:)
+C      dx2(:) =  x3(:) - x1(:)
+C      dx3(:) =  x4(:) - x1(:)
+C      v1 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
+C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
+C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x4, v1 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 2 3 4',v1
+       PRINT*,'Centroid 1:',xc(:)
+#endif
+       xc(:) = xc(:)*v1
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x2, x3, x4, x6, xt )
+C      dx1(:) =  x3(:) - x2(:)
+C      dx2(:) =  x4(:) - x2(:)
+C      dx3(:) =  x6(:) - x2(:)
+C      v2 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
+C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
+C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+       call inMesh_Tetrahedron_VolumeFromVertices( x2, x3, x4, x6, v2 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 2 3 4 6',v2
+       PRINT*,'Centroid 2:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v2
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x2, x6, x4, x5, xt )
+C      dx1(:) =  x6(:) - x2(:)
+C      dx3(:) =  x5(:) - x2(:)
+C      v3 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
+C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
+C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+       call inMesh_Tetrahedron_VolumeFromVertices( x2, x6, x4, x5, v3 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 2 6 4 5',v3
+       PRINT*,'Centroid 3:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v3
+
+       xc(:) = xc(:)/(v1 + v2 + v3)
+
+       End subroutine
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** Routine to calculate the centroid of a brick given coordinates of its
+c *** eight nodes. Uses a subdivision into six tetrahedra, which means that
+c *** the node ordering of the brick element must adhere to the convention.
+c *** The choice of internal subdivision to tetrahedra is described in my notes.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20171101
+c *** Last modified: IN <nompelis@nobelware.com> 20171101
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       Subroutine inMesh_Brick_CentroidFromVertices(
+     &                  x1, x2, x3, x4, x5, x6, x7, x8, xc)
+       Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3),x5(3),x6(3),x7(3),x8(3)
+       Real*8,intent(OUT) :: xc(3)
+       Real*8 :: xt(3),v1,v2,v3,v4,v5,v6
+
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x3, x7, xc )
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x7, v1 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 2 3 7',v1
+       PRINT*,'Centroid 1:',xc(:)
+#endif
+       xc(:) = xc(:)*v1
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x7, x6, xt )
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x7, x6, v2 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 2 7 6',v2
+       PRINT*,'Centroid 2:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v2
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x6, x7, x5, xt )
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x6, x7, x5, v3 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 6 7 5',v3
+       PRINT*,'Centroid 3:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v3
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x3, x4, x7, xt )
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x3, x4, x7, v4 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 3 4 7',v4
+       PRINT*,'Centroid 4:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v4
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x7, x4, x8, xt )
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x7, x4, x8, v5 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 7 4 8',v5
+       PRINT*,'Centroid 5:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v5
+
+       call inMesh_Tetrahedron_CentroidFromVertices( x1, x7, x8, x5, xt )
+       call inMesh_Tetrahedron_VolumeFromVertices( x1, x7, x8, x5, v6 )
+#ifdef _DEBUG_
+       PRINT*,'Volume*6 of tetrahedron 1 7 8 5',v6
+       PRINT*,'Centroid 6:',xc(:)
+#endif
+       xc(:) = xc(:) + xt(:)*v6
+
+       xc(:) = xc(:)/(v1 + v2 + v3 + v4 + v5 + v6)
 
        End subroutine
 
