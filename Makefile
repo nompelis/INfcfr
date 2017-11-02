@@ -9,6 +9,7 @@ LINK_OPTS = -shared -Wl,-soname,$(LIB_NAME).so -o $(LIB_NAME).so
 AR_OPTS = rsc $(LIB_NAME).a
 
 COPTS += -D_DEBUG_
+FOPTS += -D_DEBUG_
 
 all: lib demo2
 
@@ -27,7 +28,7 @@ demo:
 
 demo2:
 	$(FC) $(FOPTS) -c inMesh_Elements.F
-	$(FC) $(FOPTS) -Wl,-rpath=. test2.f inMesh_Elements.o -L. -lINfluent
+	$(FC) $(FOPTS) -Wl,-rpath=. test2.F inMesh_Elements.o -L. -lINfluent
 
 clean:
 	rm -f *.o *.so *.a a.out *.mod

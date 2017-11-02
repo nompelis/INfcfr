@@ -20,7 +20,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Real*8,allocatable,dimension(:) :: q
       Integer(kind=4) :: ierr,nz,k
       Integer(kind=8) :: n,ifnt(0:4),i,j
-      Logical, parameter :: itest = .TRUE.
+      Logical, parameter :: itest = .FALSE.
 
 
 c--- read a Fluent case-file and transfer it to arrays
@@ -221,8 +221,47 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
          PRINT*,'Centroid:',xce(:,i)
 #endif
       enddo
+#ifdef _DEBUG_
+      open(unit=10,file='CELL_CENTROIDS.dat',status='unknown')
+      write(10,*) 'variables = x y z'
+      write(10,*) 'zone T="Cell centroids"'
+      do i = 1,nel
+         write(10,*) xce(:,i)
+      enddo
+      close(10)
+#endif
+
+c--- form face centroids
+      do j = 1,nfa
+         if( ifn(0,j) .eq. 3 ) then
+            xcf(:,j) = (x(:, ifn(1,j) ) +
+     &                  x(:, ifn(2,j) ) +
+     &                  x(:, ifn(3,j) ))/3.0d0
+         else if( ifn(0,j) .eq. 4 ) then
+            xcf(:,j) = (x(:, ifn(1,j) )*2.0d0 +
+     &                  x(:, ifn(2,j) ) +
+     &                  x(:, ifn(3,j) )*2.0d0 +
+     &                  x(:, ifn(4,j) ))/6.0d0
+         else
+            PRINT*,'Problematic face!'
+            PRINT*,'ifn(0,j)=',ifn(0,j)
+            STOP
+         endif
 
 
+#ifdef _DEBUG2_
+         PRINT*,'Centroid:',xcf(:,i)
+#endif
+      enddo
+#ifdef _DEBUG_
+      open(unit=10,file='FACE_CENTROIDS.dat',status='unknown')
+      write(10,*) 'variables = x y z'
+      write(10,*) 'zone T="Face centroids"'
+      do j = 1,nfa
+         write(10,*) xcf(:,j)
+      enddo
+      close(10)
+#endif
 
       End subroutine
 
@@ -233,7 +272,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171027
+c *** Last modified: IN <nompelis@nobelware.com> 20171102
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
       Use inMesh_Elements
@@ -251,7 +290,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8) :: i,j,k
       Integer(kind=8) :: ntri,nqua
       Integer(kind=8) :: ieno(0:8),iefo(0:8)
-      Logical, parameter :: itest = .FALSE.
+      Logical, parameter :: itest = .TRUE.
 
 
       PRINT*,'Number of cells:',nel
@@ -261,7 +300,7 @@ c--- write a tecplot file with all cells; first put the nodes
 c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
       open(unit=10,file='CELLS.dat',status='unknown',form='formatted')
       write(10,*) 'variables = x y z'
-      write(10,*) 'zone T="Tetrahedra"'
+      write(10,*) 'zone T="Elements as hexahedra"'
       write(10,*) 'NODES=',nno,', ELEMENTS=',nel
       write(10,*) 'ET=BRICK'
       write(10,*) 'F=FEPOINT'
@@ -303,6 +342,8 @@ c--- form individual volume elements (cells) from surface elements
          ntri = 0
          nqua = 0
 
+         ieno(:) = 0
+
          do k = 1,ief(0,i)
             if( ifn(0, ief(k,i) ) .eq. 3 ) ntri = ntri + 1
             if( ifn(0, ief(k,i) ) .eq. 4 ) nqua = nqua + 1
@@ -317,6 +358,8 @@ c--- form individual volume elements (cells) from surface elements
             call inMesh_Elements_FormTetrahedronFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- store data to returned array
+            ien(:,i) = ieno(:)
 c--- modify nodes to plot as a "brick" element
             ieno(5:8) = ieno(4)
             ieno(4) = ieno(3)
@@ -324,12 +367,16 @@ c--- modify nodes to plot as a "brick" element
             call inMesh_Elements_FormPyramidFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- store data to returned array
+            ien(:,i) = ieno(:)
 c--- modify nodes to plot as a "brick" element
             ieno(6:8) = ieno(5)
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- store data to returned array
+            ien(:,i) = ieno(:)
 c--- modify nodes to plot as a "brick" element
             ieno(7:8) = ieno(6)
             ieno(6) = ieno(5)
@@ -339,14 +386,13 @@ c--- modify nodes to plot as a "brick" element
             call inMesh_Elements_FormBrickFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- store data to returned array
+            ien(:,i) = ieno(:)
          else
             PRINT*,'Problematic element!'
             PRINT*,'ntri=',ntri,'nqua=',nqua
             STOP
          endif
-
-c--- store data to returned array
-         ien(:,i) = ieno(:)
 
       IF( itest ) THEN
 c--- dump element node-connectivity to the file; this is not generic...
