@@ -13,12 +13,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
       Character*100 :: fname
-      Integer(kind=8) :: nno,nel,nfa
+      Integer(kind=8) :: nno,nel,nfa,nge,net
       Integer(kind=8),allocatable,dimension(:,:) :: ifn,ife,izone
       Integer(kind=8),allocatable,dimension(:,:) :: ief,ien
-      Real*8,allocatable,dimension(:,:) :: x
+      Real*8,allocatable,dimension(:,:) :: x,xce,xcf,dq
+      Real*8,allocatable,dimension(:) :: q
       Integer(kind=4) :: ierr,nz,k
-      Integer(kind=8) :: n,ifnt(0:4),i
+      Integer(kind=8) :: n,ifnt(0:4),i,j
       Logical, parameter :: itest = .TRUE.
 
 
@@ -82,8 +83,19 @@ c--- write a tecplot file with all _faces_ (using "nfa" for no. of elements)
       enddo
       close(10)
 
-c--- create arrays to hold cell data
+c--- count ghost cells
+      nge = 0
+      do j = 1,nfa
+         if( ife(1,j) .le. 0 ) nge = nge + 1
+         if( ife(2,j) .le. 0 ) nge = nge + 1
+      enddo
+      net = nel + nge
+      PRINT*,'Number of ghost cells:',nge
+      PRINT*,'Number of total cells:',net
+
+c--- create arrays to hold cell & face data
       allocate( ief(0:6,nel),ien(0:8,nel), STAT=ierr)
+      allocate( xce(3,net),xcf(3,nfa),q(net),dq(3,net), STAT=ierr)
 
 c--- call a subroutine to create cells
       call make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
@@ -100,18 +112,119 @@ c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
       do n = 1,nno
          write(10,*) x(:,n)
       enddo
-
       do i = 1,nel
          write(10,*) ien(1:8,i)
       enddo
-
       close(10)
       ENDIF
 
+c--- call a subroutine to create additional geometric data
+      call make_geometry(nz,nno,nel,nge,net,nfa,
+     &                   ifn,ife,izone,x,ief,ien,xce,xcf)
+
+
+
+
+
 c--- drop arrays
-      deallocate( x, ifn, ife, izone, ief, ien )
+      deallocate( x, ifn, ife, izone, ief, ien, xce, xcf, q, dq )
 
       End
+
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** A subroutine to create cells from arrays adhering to a Fluent case file
+c *** format. The routine simply loops over cells and invokes special cell
+c *** construction functions. It fills arrays that are returned to the calling
+c *** function/routine.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20171027
+c *** Last modified: IN <nompelis@nobelware.com> 20171102
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      Subroutine make_geometry(nz,nno,nel,nge,net,
+     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf)
+      Use inMesh_Elements
+      Implicit None
+      Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
+      Integer(kind=4),intent(IN) :: nz
+      Integer(kind=8),intent(IN) :: ifn(0:4,nfa)
+      Integer(kind=8),intent(IN) :: ife(2,nfa)
+      Integer(kind=8),intent(IN) :: izone(4,nz)
+      Integer(kind=8),intent(IN) :: ief(0:6,nel)
+      Integer(kind=8),intent(IN) :: ien(0:8,nel)
+      Real*8,intent(IN) :: x(3,nno)
+      Real*8,intent(OUT) :: xce(3,net),xcf(3,nfa)
+      Integer(kind=8) :: ntri,nqua
+      Integer(kind=4) :: ierr
+
+      Integer(kind=8) :: i,j,k
+      Logical, parameter :: itest = .TRUE.
+
+
+      PRINT*,'Creating geometry'
+      xce(:,:) = 0.0d0
+      xcf(:,:) = 0.0d0
+
+
+c--- form element centroids (all subjectivity in construction is in inMesh API)
+      do i = 1,nel
+         ntri = 0
+         nqua = 0
+
+         do k = 1,ief(0,i)
+            if( ifn(0, ief(k,i) ) .eq. 3 ) ntri = ntri + 1
+            if( ifn(0, ief(k,i) ) .eq. 4 ) nqua = nqua + 1
+         enddo
+         if( ntri+nqua .lt. 4 .OR.  ntri+nqua .gt. 6 ) then
+            PRINT*,'Problematic element!'
+            PRINT*,'ntri=',ntri,'nqua=',nqua
+            STOP
+         endif
+
+         if( ntri .eq. 4 .AND. nqua .eq. 0 ) then
+            call inMesh_Tetrahedron_CentroidFromVertices(
+     &                x(1, ien(1,i) ),
+     &                x(1, ien(2,i) ),
+     &                x(1, ien(3,i) ),
+     &                x(1, ien(4,i) ), xce(1,i) )
+         else if( ntri .eq. 4 .AND. nqua .eq. 1 ) then
+            call inMesh_Pyramid_CentroidFromVertices(
+     &                x(1, ien(1,i) ),
+     &                x(1, ien(2,i) ),
+     &                x(1, ien(3,i) ),
+     &                x(1, ien(4,i) ),
+     &                x(1, ien(5,i) ), xce(1,i) )
+         else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
+            call inMesh_Wedge_CentroidFromVertices(
+     &                x(1, ien(1,i) ),
+     &                x(1, ien(2,i) ),
+     &                x(1, ien(3,i) ),
+     &                x(1, ien(4,i) ),
+     &                x(1, ien(5,i) ),
+     &                x(1, ien(6,i) ), xce(1,i) )
+         else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
+            call inMesh_Brick_CentroidFromVertices(
+     &                x(1, ien(1,i) ),
+     &                x(1, ien(2,i) ),
+     &                x(1, ien(3,i) ),
+     &                x(1, ien(4,i) ),
+     &                x(1, ien(5,i) ),
+     &                x(1, ien(6,i) ),
+     &                x(1, ien(7,i) ),
+     &                x(1, ien(8,i) ), xce(1,i) )
+         else
+            PRINT*,'Problematic element!'
+            PRINT*,'ntri=',ntri,'nqua=',nqua
+            STOP
+         endif
+#ifdef _DEBUG2_
+         PRINT*,'Centroid:',xce(:,i)
+#endif
+      enddo
+
+
+
+      End subroutine
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** A subroutine to create cells from arrays adhering to a Fluent case file
