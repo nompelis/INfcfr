@@ -53,3 +53,10 @@ subroutine and by forming additional arrays as needed.
 
 IN 2017/10/24
 
+
+A second and more useful example of a Fortran demonstration has been added in
+which derived structures from a loaded mesh are built, such as the element/cell
+and face centroids.
+
+IN 2017/11/06
+
