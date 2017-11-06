@@ -139,7 +139,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171102
+c *** Last modified: IN <nompelis@nobelware.com> 20171106
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf)
@@ -148,7 +148,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
       Integer(kind=4),intent(IN) :: nz
       Integer(kind=8),intent(IN) :: ifn(0:4,nfa)
-      Integer(kind=8),intent(IN) :: ife(2,nfa)
+      Integer(kind=8),intent(INOUT) :: ife(2,nfa)
       Integer(kind=8),intent(IN) :: izone(4,nz)
       Integer(kind=8),intent(IN) :: ief(0:6,nel)
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
@@ -157,7 +157,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8) :: ntri,nqua
       Integer(kind=4) :: ierr
 
-      Integer(kind=8) :: i,j,k
+      Integer(kind=8) :: i,j,k,ii
+      Real*8 :: dx1(3),dx2(3), xn(3),xl
       Logical, parameter :: itest = .TRUE.
 
 
@@ -259,6 +260,113 @@ c--- form face centroids
       write(10,*) 'zone T="Face centroids"'
       do j = 1,nfa
          write(10,*) xcf(:,j)
+      enddo
+      close(10)
+#endif
+
+c--- form ghost-cell centroids
+c--- (Uses an extrapolation in the face-normal direction!)
+      ii = nel
+      do k = 1,nz
+         if( izone(4,k) .eq. 13 ) then
+            PRINT*,'Zone of faces:',k
+            do j = izone(1,k),izone(2,k)
+
+               if( ife(1,j).le.0 ) then
+                  i = ife(2,j)
+                  ii = ii + 1
+                  ife(1,j) = ii
+
+                  if( ifn(0,j).eq.3 ) then
+                     dx1(:) = x(:, ifn(2,j)) - x(:, ifn(1,j))
+                     dx2(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+                     xn(1) =  dx1(2)*dx2(3) -dx2(2)*dx1(3)
+                     xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+                     xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
+                  else
+                     dx1(:) = x(:, ifn(2,j)) - x(:, ifn(1,j))
+                     dx2(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+                     xn(1) =  dx1(2)*dx2(3) -dx2(2)*dx1(3)
+                     xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+                     xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
+                     dx1(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+                     dx2(:) = x(:, ifn(4,j)) - x(:, ifn(1,j))
+                     xn(1) = (xn(1) +dx1(2)*dx2(3) -dx2(2)*dx1(3))*0.5d0
+                     xn(2) = (xn(2) -dx1(1)*dx2(3) +dx2(1)*dx1(3))*0.5d0
+                     xn(3) = (xn(3) +dx1(1)*dx2(2) -dx2(1)*dx1(2))*0.5d0
+                  endif
+                  xl = sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+                  xn(:) = xn(:)/xl
+
+                  dx1(:) = xcf(:,j) - xce(:,i)
+                  xl = dx1(1)*xn(1) + dx1(2)*xn(2) + dx1(3)*xn(3)
+                  xce(:,ii) = xce(:,i) + 2.0d0*xl*xn(:)
+               endif
+
+               if( ife(2,j).le.0 ) then
+                  i = ife(1,j)
+                  ii = ii + 1
+                  ife(2,j) = ii
+
+                  if( ifn(0,j).eq.3 ) then
+                     dx1(:) = x(:, ifn(2,j)) - x(:, ifn(1,j))
+                     dx2(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+                     xn(1) =  dx1(2)*dx2(3) -dx2(2)*dx1(3)
+                     xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+                     xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
+                  else
+                     dx1(:) = x(:, ifn(2,j)) - x(:, ifn(1,j))
+                     dx2(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+                     xn(1) =  dx1(2)*dx2(3) -dx2(2)*dx1(3)
+                     xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+                     xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
+                     dx1(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+                     dx2(:) = x(:, ifn(4,j)) - x(:, ifn(1,j))
+                     xn(1) = (xn(1) +dx1(2)*dx2(3) -dx2(2)*dx1(3))*0.5d0
+                     xn(2) = (xn(2) -dx1(1)*dx2(3) +dx2(1)*dx1(3))*0.5d0
+                     xn(3) = (xn(3) +dx1(1)*dx2(2) -dx2(1)*dx1(2))*0.5d0
+                  endif
+                  xl = sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+                  xn(:) = xn(:)/xl
+
+                  dx1(:) = xcf(:,j) - xce(:,i)
+                  xl = dx1(1)*xn(1) + dx1(2)*xn(2) + dx1(3)*xn(3)
+                  xce(:,ii) = xce(:,i) + 2.0d0*xl*xn(:)
+               endif
+
+            enddo
+         endif
+      enddo
+#ifdef _DEBUG_
+      open(unit=10,file='GHOST_CENTROIDS.dat',status='unknown')
+      write(10,*) 'variables = x y z'
+      do k = 1,nz
+         if( izone(4,k) .eq. 13 .AND. k.ne.3 ) then   ! special case!
+            PRINT*,'Writing zone of faces:',k
+            write(10,*) 'zone T="Boundary faces"'
+            write(10,*) 'NODES=',nno
+            write(10,*) 'ELEMENTS=',izone(2,k)-izone(1,k)+1
+            write(10,*) 'ET=QUADRILATERAL,F=FEPOINT'
+            do i = 1,nno
+               write(10,*) x(:,i)
+            enddo
+            do j = izone(1,k),izone(2,k)
+               if( ifn(0,j) .eq. 4) write(10,*) ifn(1:4,j)
+               if( ifn(0,j) .eq. 3) write(10,*) ifn(1:3,j),ifn(3,j)
+            enddo
+
+            PRINT*,'Writing zone of centroid-vectors:',k
+            write(10,*) 'zone T="Centroids as vectors"'
+            write(10,*) 'NODES=',nel+nge
+            write(10,*) 'ELEMENTS=',izone(2,k)-izone(1,k)+1
+            write(10,*) 'ET=TRIANGLE,F=FEPOINT'
+            do i = 1,nel+nge
+               write(10,*) xce(:,i)
+            enddo
+            do j = izone(1,k),izone(2,k)
+               write(10,*) ife(1,j),ife(2,j),ife(1,j)
+            enddo
+         endif
       enddo
       close(10)
 #endif
