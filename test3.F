@@ -156,14 +156,22 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Real*8,intent(INOUT) :: q(net),dq(3,net)
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
+      Real*8 :: xx(3),delta
       Logical, parameter :: itest = .TRUE.
 
 
       PRINT*,'Testing gradients'
 
-c--- Impose a field variable
+c--- Impose a field variable and its analytical gradient vector
+      delta = 60.0d0
       do i = 1,nel+nge
-         q(i) = xce(2,i)
+         xx(:) = xce(:,i)
+c======= Field variable
+         q(i) = sin( xx(2)*delta )
+c======= Analytical (exact) gradient of field variable
+         dq(1,i) = 0.0d0
+         dq(2,i) = delta*cos( xx(2)*delta )
+         dq(3,i) = 0.0d0
       enddo
 
 c--- Output the data
@@ -210,16 +218,112 @@ c--- Output the data
       enddo
       close(10)
 
+c--- Output the analytical gradient
+      open(unit=10,file='CELL_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dq_x dq_y dq_z'
+      write(10,*) 'zone T="Cell-center data"'
+      write(10,*) 'NODES=',nno
+      write(10,*) 'ELEMENTS=',nel
+      write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
+      write(10,*) 'VARLOCATION=([1-3]=NODAL,[4-6]=CELLCENTERED)'
+      do i = 1,nno
+         write(10,*) x(1,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(2,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(3,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(1,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(2,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(3,i)
+      enddo
+      do i = 1,nel
+         if( ien(0,i) .eq. 4 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 5 ) then
+            ieni(1:4) = ien(1:4,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 6 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:7) = ien(4:6,i)
+            ieni(8) = ien(6,i)
+         else if( ien(0,i) .eq. 8 ) then
+            ieni(:) = ien(1:8,i)
+         else
+            PRINT*,'Prolematic element connectivity'
+            STOP
+         endif
 
-c--- Calculate the gradient
+         write(10,*) ieni(:)
+      enddo
+      close(10)
+
+c--- Calculate the approximate gradient
       do i = 1,nel+nge
          dq(:,i) = 0.0d0
+c==== details needed here
+
       enddo
 
+c--- Output the approximate gradient
+      open(unit=10,file='CELL_APPROX_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dq_x dq_y dq_z'
+      write(10,*) 'zone T="Cell-center data"'
+      write(10,*) 'NODES=',nno
+      write(10,*) 'ELEMENTS=',nel
+      write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
+      write(10,*) 'VARLOCATION=([1-3]=NODAL,[4-6]=CELLCENTERED)'
+      do i = 1,nno
+         write(10,*) x(1,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(2,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(3,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(1,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(2,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(3,i)
+      enddo
+      do i = 1,nel
+         if( ien(0,i) .eq. 4 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 5 ) then
+            ieni(1:4) = ien(1:4,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 6 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:7) = ien(4:6,i)
+            ieni(8) = ien(6,i)
+         else if( ien(0,i) .eq. 8 ) then
+            ieni(:) = ien(1:8,i)
+         else
+            PRINT*,'Prolematic element connectivity'
+            STOP
+         endif
 
-
-
-
+         write(10,*) ieni(:)
+      enddo
+      close(10)
 
       End subroutine
 
