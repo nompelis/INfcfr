@@ -9,7 +9,7 @@ LINK_OPTS = -shared -Wl,-soname,$(LIB_NAME).so -o $(LIB_NAME).so
 AR_OPTS = rsc $(LIB_NAME).a
 
 COPTS += -D_DEBUG_
-FOPTS += -D_DEBUG_
+FOPTS += -D_DEBUG_ -fbounds-check
 
 all: lib demo3
 
@@ -27,11 +27,11 @@ demo:
 	$(FC) $(FOPTS) -Wl,-rpath=. test.f inMesh_Elements.o -L. -lINfluent
 
 demo2:
-	$(FC) $(FOPTS) -c inMesh_Elements.F
+	$(FC) $(FOPTS) -U_DEBUG_ -U_DEBUG2_ -c inMesh_Elements.F
 	$(FC) $(FOPTS) -Wl,-rpath=. test2.F inMesh_Elements.o -L. -lINfluent
 
 demo3:
-	$(FC) $(FOPTS) -c inMesh_Elements.F
+	$(FC) $(FOPTS) -U_DEBUG_ -U_DEBUG2_ -c inMesh_Elements.F
 	$(FC) $(FOPTS) -Wl,-rpath=. test3.F inMesh_Elements.o -L. -lINfluent
 
 clean:
