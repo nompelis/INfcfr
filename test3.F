@@ -126,20 +126,18 @@ c--- call a subroutine to test gradient reconstruction
       call test_gradient(nz,nno,nel,nge,net,nfa,
      &                   ifn,ife,izone,x,ief,ien,xce,xcf,q,dq)
 
-
-
-
-
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien, xce, xcf, q, dq )
 
       End
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c *** A subroutine to perform gradient reconstruction from field data.
+c *** A subroutine to perform gradient reconstruction from field data using
+c *** the Weighted Least-Squares method. The weights used are inverse-distance
+c *** of centroids to the cell where the gradients is estimated.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171107
+c *** Last modified: IN <nompelis@nobelware.com> 20171108
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,q,dq)
@@ -157,6 +155,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
       Real*8 :: xx(3),delta
+      Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
       Logical, parameter :: itest = .TRUE.
 
 
@@ -269,10 +268,60 @@ c--- Output the analytical gradient
       close(10)
 
 c--- Calculate the approximate gradient
-      do i = 1,nel+nge
+c--- (Disregard all arithmetic efficiency concerns for now...)
+      do i = 1,nel
          dq(:,i) = 0.0d0
-c==== details needed here
 
+         rmat(:,:) = 0.0d0
+         rhs(:) = 0.0d0
+
+c--- form weights
+         wem = 0.0d0                  ! maximum weight value
+         xo(:) = xce(:,i)             ! get cell centroid
+         do k = 1,ief(0,i)            ! loop over faces of element
+            j = ief(k,i)              ! get face number
+            if( ife(1,j) .eq. i ) then
+               ii = ife(2,j)          ! get adjacent cell number
+            else
+               ii = ife(1,j)          ! get adjacent cell number
+            endif
+            xx(:) = xce(:,ii) - xo(:) ! get cent-to-cent vector
+            rd = sqrt( xx(1)**2 + xx(2)**2 + xx(3)**2 )
+
+            wei(k) = 1.0d0/rd
+            if( wem .lt. wei(k) ) wem = wei(k)
+         enddo
+         do k = 1,ief(0,i)
+            wei(k) = wei(k)/wem       ! normalize weights
+         enddo
+
+c--- use weights
+         do k = 1,ief(0,i)            ! loop over faces of element
+            j = ief(k,i)              ! get face number
+            if( ife(1,j) .eq. i ) then
+               ii = ife(2,j)          ! get adjacent cell number
+            else
+               ii = ife(1,j)          ! get adjacent cell number
+            endif
+            xx(:) = xce(:,ii) - xo(:) ! get cent-to-cent vector
+
+            rmat(1:3,1) = rmat(1:3,1) + xx(1)*xx(:) *wei(k)
+            rmat(1:3,2) = rmat(1:3,2) + xx(2)*xx(:) *wei(k)
+            rmat(1:3,3) = rmat(1:3,3) + xx(3)*xx(:) *wei(k)
+            rmat(1:3,4) = rmat(1:3,4) +       xx(:) *wei(k)
+            rmat(4,1:3) = rmat(4,1:3) +       xx(:) *wei(k)
+            rmat(4,4)   = rmat(4,4)   +       1.0d0 *wei(k)
+
+            rhs(1:3) = rhs(1:3) + xx(:)*q(ii) *wei(k)
+            rhs(4)   = rhs(4)   +       q(ii) *wei(k)
+         enddo
+
+         call invert_fbf( rmat )
+
+         dq(:,i) = rmat(1:3,1)*rhs(1) +
+     &             rmat(1:3,2)*rhs(2) +
+     &             rmat(1:3,3)*rhs(3) +
+     &             rmat(1:3,4)*rhs(4)
       enddo
 
 c--- Output the approximate gradient
@@ -324,6 +373,104 @@ c--- Output the approximate gradient
          write(10,*) ieni(:)
       enddo
       close(10)
+
+      End subroutine
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** A subroutine to invert a 4x4 matrix.
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20041220
+c *** Last modified: IN <nompelis@nobelware.com> 20171107
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      Subroutine invert_fbf( aa )
+      Implicit None
+      Real*8, intent(INOUT) :: aa(4,4)
+      Real*8 :: cc(4,4),det
+
+
+      cc(1,1) = - aa(2,4)*aa(3,3)*aa(4,2) + aa(2,3)*aa(3,4)*aa(4,2)
+     &          + aa(2,4)*aa(3,2)*aa(4,3) - aa(2,2)*aa(3,4)*aa(4,3)
+     &          - aa(2,3)*aa(3,2)*aa(4,4) + aa(2,2)*aa(3,3)*aa(4,4)
+
+      cc(1,2) = + aa(1,4)*aa(3,3)*aa(4,2) - aa(1,3)*aa(3,4)*aa(4,2)
+     &          - aa(1,4)*aa(3,2)*aa(4,3) + aa(1,2)*aa(3,4)*aa(4,3)
+     &          + aa(1,3)*aa(3,2)*aa(4,4) - aa(1,2)*aa(3,3)*aa(4,4)
+
+      cc(1,3) = - aa(1,4)*aa(2,3)*aa(4,2) + aa(1,3)*aa(2,4)*aa(4,2)
+     &          + aa(1,4)*aa(2,2)*aa(4,3) - aa(1,2)*aa(2,4)*aa(4,3)
+     &          - aa(1,3)*aa(2,2)*aa(4,4) + aa(1,2)*aa(2,3)*aa(4,4)
+
+      cc(1,4) = + aa(1,4)*aa(2,3)*aa(3,2) - aa(1,3)*aa(2,4)*aa(3,2)
+     &          - aa(1,4)*aa(2,2)*aa(3,3) + aa(1,2)*aa(2,4)*aa(3,3)
+     &          + aa(1,3)*aa(2,2)*aa(3,4) - aa(1,2)*aa(2,3)*aa(3,4)
+
+
+      cc(2,1) = + aa(2,4)*aa(3,3)*aa(4,1) - aa(2,3)*aa(3,4)*aa(4,1)
+     &          - aa(2,4)*aa(3,1)*aa(4,3) + aa(2,1)*aa(3,4)*aa(4,3)
+     &          + aa(2,3)*aa(3,1)*aa(4,4) - aa(2,1)*aa(3,3)*aa(4,4)
+
+      cc(2,2) = - aa(1,4)*aa(3,3)*aa(4,1) + aa(1,3)*aa(3,4)*aa(4,1)
+     &          + aa(1,4)*aa(3,1)*aa(4,3) - aa(1,1)*aa(3,4)*aa(4,3)
+     &          - aa(1,3)*aa(3,1)*aa(4,4) + aa(1,1)*aa(3,3)*aa(4,4)
+
+      cc(2,3) = + aa(1,4)*aa(2,3)*aa(4,1) - aa(1,3)*aa(2,4)*aa(4,1)
+     &          - aa(1,4)*aa(2,1)*aa(4,3) + aa(1,1)*aa(2,4)*aa(4,3)
+     &          + aa(1,3)*aa(2,1)*aa(4,4) - aa(1,1)*aa(2,3)*aa(4,4)
+
+      cc(2,4) = - aa(1,4)*aa(2,3)*aa(3,1) + aa(1,3)*aa(2,4)*aa(3,1)
+     &          + aa(1,4)*aa(2,1)*aa(3,3) - aa(1,1)*aa(2,4)*aa(3,3)
+     &          - aa(1,3)*aa(2,1)*aa(3,4) + aa(1,1)*aa(2,3)*aa(3,4)
+
+
+      cc(3,1) = - aa(2,4)*aa(3,2)*aa(4,1) + aa(2,2)*aa(3,4)*aa(4,1)
+     &          + aa(2,4)*aa(3,1)*aa(4,2) - aa(2,1)*aa(3,4)*aa(4,2)
+     &          - aa(2,2)*aa(3,1)*aa(4,4) + aa(2,1)*aa(3,2)*aa(4,4)
+
+      cc(3,2) = + aa(1,4)*aa(3,2)*aa(4,1) - aa(1,2)*aa(3,4)*aa(4,1)
+     &          - aa(1,4)*aa(3,1)*aa(4,2) + aa(1,1)*aa(3,4)*aa(4,2)
+     &          + aa(1,2)*aa(3,1)*aa(4,4) - aa(1,1)*aa(3,2)*aa(4,4)
+
+      cc(3,3) = - aa(1,4)*aa(2,2)*aa(4,1) + aa(1,2)*aa(2,4)*aa(4,1)
+     &          + aa(1,4)*aa(2,1)*aa(4,2) - aa(1,1)*aa(2,4)*aa(4,2)
+     &          - aa(1,2)*aa(2,1)*aa(4,4) + aa(1,1)*aa(2,2)*aa(4,4)
+
+      cc(3,4) = + aa(1,4)*aa(2,2)*aa(3,1) - aa(1,2)*aa(2,4)*aa(3,1)
+     &          - aa(1,4)*aa(2,1)*aa(3,2) + aa(1,1)*aa(2,4)*aa(3,2)
+     &          + aa(1,2)*aa(2,1)*aa(3,4) - aa(1,1)*aa(2,2)*aa(3,4)
+
+
+      cc(4,1) = + aa(2,3)*aa(3,2)*aa(4,1) - aa(2,2)*aa(3,3)*aa(4,1)
+     &          - aa(2,3)*aa(3,1)*aa(4,2) + aa(2,1)*aa(3,3)*aa(4,2)
+     &          + aa(2,2)*aa(3,1)*aa(4,3) - aa(2,1)*aa(3,2)*aa(4,3)
+
+      cc(4,2) = - aa(1,3)*aa(3,2)*aa(4,1) + aa(1,2)*aa(3,3)*aa(4,1)
+     &          + aa(1,3)*aa(3,1)*aa(4,2) - aa(1,1)*aa(3,3)*aa(4,2)
+     &          - aa(1,2)*aa(3,1)*aa(4,3) + aa(1,1)*aa(3,2)*aa(4,3)
+
+      cc(4,3) = + aa(1,3)*aa(2,2)*aa(4,1) - aa(1,2)*aa(2,3)*aa(4,1)
+     &          - aa(1,3)*aa(2,1)*aa(4,2) + aa(1,1)*aa(2,3)*aa(4,2)
+     &          + aa(1,2)*aa(2,1)*aa(4,3) - aa(1,1)*aa(2,2)*aa(4,3)
+
+      cc(4,4) = - aa(1,3)*aa(2,2)*aa(3,1) + aa(1,2)*aa(2,3)*aa(3,1)
+     &          + aa(1,3)*aa(2,1)*aa(3,2) - aa(1,1)*aa(2,3)*aa(3,2)
+     &          - aa(1,2)*aa(2,1)*aa(3,3) + aa(1,1)*aa(2,2)*aa(3,3)
+
+
+      det = + aa(1,4)*aa(2,3)*aa(3,2)*aa(4,1) - aa(1,3)*aa(2,4)*aa(3,2)*aa(4,1)
+     &      - aa(1,4)*aa(2,2)*aa(3,3)*aa(4,1) + aa(1,2)*aa(2,4)*aa(3,3)*aa(4,1)
+     &      + aa(1,3)*aa(2,2)*aa(3,4)*aa(4,1) - aa(1,2)*aa(2,3)*aa(3,4)*aa(4,1)
+     &      - aa(1,4)*aa(2,3)*aa(3,1)*aa(4,2) + aa(1,3)*aa(2,4)*aa(3,1)*aa(4,2)
+     &      + aa(1,4)*aa(2,1)*aa(3,3)*aa(4,2) - aa(1,1)*aa(2,4)*aa(3,3)*aa(4,2)
+     &      - aa(1,3)*aa(2,1)*aa(3,4)*aa(4,2) + aa(1,1)*aa(2,3)*aa(3,4)*aa(4,2)
+     &      + aa(1,4)*aa(2,2)*aa(3,1)*aa(4,3) - aa(1,2)*aa(2,4)*aa(3,1)*aa(4,3)
+     &      - aa(1,4)*aa(2,1)*aa(3,2)*aa(4,3) + aa(1,1)*aa(2,4)*aa(3,2)*aa(4,3)
+     &      + aa(1,2)*aa(2,1)*aa(3,4)*aa(4,3) - aa(1,1)*aa(2,2)*aa(3,4)*aa(4,3)
+     &      - aa(1,3)*aa(2,2)*aa(3,1)*aa(4,4) + aa(1,2)*aa(2,3)*aa(3,1)*aa(4,4)
+     &      + aa(1,3)*aa(2,1)*aa(3,2)*aa(4,4) - aa(1,1)*aa(2,3)*aa(3,2)*aa(4,4)
+     &      - aa(1,2)*aa(2,1)*aa(3,3)*aa(4,4) + aa(1,1)*aa(2,2)*aa(3,3)*aa(4,4)
+
+      det = 1.0d0/det
+      aa = cc*det
 
       End subroutine
 
