@@ -60,3 +60,28 @@ and face centroids.
 
 IN 2017/11/06
 
+
+A third useful example of a Fortran demonstration has been added in which the
+spatial gradient of an imposed field-variable is computed using a Weighted
+Least-Squares method. This demonstration is built on top of the previous (demo2)
+code as it uses the element centroid structures.
+
+This demonstration is useful for evaluating the accuracy of the weighted least
+squares approach when different weights are used. In the present demonstration,
+the common form of inverse-distance is used as the weight for each of the cells
+that contribute to a given cell's gradient estimation. The Fortran routine
+"test_gradient()" can be modified to alter the trial-field, compute the field's
+analytical spatial derivatives, change the form of the weights used, and be
+modified to compute a normed error. The linear system formed by the WLS method
+is assembled in this routine without regard for arithmetic efficiency as it is
+only for instruction purposes.
+
+(NOTE FOR PERSONS WHO ARE INTERESTED IN BUILDING A SOLVER ON TOP OF THIS CODE:
+This gradient estimation can be used for evaluating any term in a PDE involving
+first derivatives, and they are expected to be second order accurate. In CFD
+performed using the finite volume method, this form is used to compute viscous
+fluxes at faces and in some cases higher-order inviscid fluxes. Also, when
+threading, the gradient calculation should be completely parallelizable.)
+
+IN 2017/11/08
+
