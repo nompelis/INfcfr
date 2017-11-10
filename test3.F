@@ -133,11 +133,16 @@ c--- drop arrays
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** A subroutine to perform gradient reconstruction from field data using
-c *** the Weighted Least-Squares method. The weights used are inverse-distance
-c *** of centroids to the cell where the gradients is estimated.
+c *** the Weighted Least-Squares method. The weights used are tested here.
+c *** Several methods are used:
+c *** 1. A standard inverse-distance weight based on my "hyper-plane regression"
+c *** method with 4 equations
+c *** 2. The WLSQ(N) according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
+c *** Nov. 2013) with N=2
+c *** 3. The WLSQ(G) according to SK&H
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171108
+c *** Last modified: IN <nompelis@nobelware.com> 20171110
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,q,dq)
@@ -155,7 +160,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
       Real*8 :: xx(3),delta
+      Integer(kind=4) :: imethod = 2
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
+      Real*8 :: xn(3),delq,rl
       Logical, parameter :: itest = .TRUE.
 
 
@@ -220,7 +227,7 @@ c--- Output the data
 c--- Output the analytical gradient
       open(unit=10,file='CELL_GRADIENT.dat',status='unknown')
       write(10,*) 'variables = x y z dq_x dq_y dq_z'
-      write(10,*) 'zone T="Cell-center data"'
+      write(10,*) 'zone T="Cell-center grad"'
       write(10,*) 'NODES=',nno
       write(10,*) 'ELEMENTS=',nel
       write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
@@ -275,6 +282,10 @@ c--- (Disregard all arithmetic efficiency concerns for now...)
          rmat(:,:) = 0.0d0
          rhs(:) = 0.0d0
 
+         Select Case( imethod )
+
+         Case(1)   ! IN's WLS
+
 c--- form weights
          wem = 0.0d0                  ! maximum weight value
          xo(:) = xce(:,i)             ! get cell centroid
@@ -322,12 +333,51 @@ c--- use weights
      &             rmat(1:3,2)*rhs(2) +
      &             rmat(1:3,3)*rhs(3) +
      &             rmat(1:3,4)*rhs(4)
+
+         Case(2)   ! SK&H WLSQ(N=2)
+
+c--- form weights
+         wem = 0.0d0                  ! maximum weight value
+         xo(:) = xce(:,i)             ! get cell centroid
+         do k = 1,ief(0,i)            ! loop over faces of element
+            j = ief(k,i)              ! get face number
+            if( ife(1,j) .eq. i ) then
+               ii = ife(2,j)          ! get adjacent cell number
+            else
+               ii = ife(1,j)          ! get adjacent cell number
+            endif
+            xx(:) = xce(:,ii) - xo(:) ! get cent-to-cent vector
+            rd = sqrt( xx(1)**2 + xx(2)**2 + xx(3)**2 )
+
+            xn(:) = xx(:)/rd                 ! (x_L)_j
+            wei(k) =    1.0d0                ! w_j
+            delq = q(ii) - q(i)              ! (Delta q)_j
+            rl = rd                          ! L_j
+
+            rmat(1:3,1) = rmat(1:3,1) + wei(k)*xx(:)*xx(1)
+            rmat(1:3,2) = rmat(1:3,2) + wei(k)*xx(:)*xx(2)
+            rmat(1:3,3) = rmat(1:3,3) + wei(k)*xx(:)*xx(3)
+            !---- need a 4th equation given the hard-wired 4x4 inversion
+            rmat(4,4) = 1.0d0                ! over-write without worries...
+
+            rhs(1:3) = rhs(1:3) + wei(k)*rl*delq*xn(:)
+         enddo
+
+         call invert_fbf( rmat )
+
+         dq(:,i) = rmat(1:3,1)*rhs(1) +
+     &             rmat(1:3,2)*rhs(2) +
+     &             rmat(1:3,3)*rhs(3) +
+     &             rmat(1:3,4)*rhs(4)
+
+         End Select
+
       enddo
 
 c--- Output the approximate gradient
       open(unit=10,file='CELL_APPROX_GRADIENT.dat',status='unknown')
       write(10,*) 'variables = x y z dq_x dq_y dq_z'
-      write(10,*) 'zone T="Cell-center data"'
+      write(10,*) 'zone T="Cell-center approx"'
       write(10,*) 'NODES=',nno
       write(10,*) 'ELEMENTS=',nel
       write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
