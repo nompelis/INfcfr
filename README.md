@@ -85,3 +85,19 @@ threading, the gradient calculation should be completely parallelizable.)
 
 IN 2017/11/08
 
+
+Separated methods for testing gradient reconstructions. The following methods
+are presently implemented:
+    
+1. My Weighted Least-Squares (WLS) method based on a hyper-plane regression
+    
+2. The WLSQ(N) as described in:
+    
+Eiji Shima, Keiichi Kitamura, and Takamori Haga, ``Green-Gauss/Weighted-Leas
+Squares hybrid Gradient Reconstruction for Arbitrary Polyhedra Unstructured
+Grids,'' Technical Notes, AIAA Journal, Vol. 51, No. 11, November 2013.
+
+The code can very easily be modified to test additional methods.
+
+IN 2017/11/10
+
