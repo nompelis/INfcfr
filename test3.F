@@ -8,7 +8,7 @@ c *** This code is intended to be used for testing scalar field gradient
 c *** construction using different methods. It is based off the "demo1" code.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171107
+c *** Last modified: IN <nompelis@nobelware.com> 20171121
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -17,7 +17,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),allocatable,dimension(:,:) :: ifn,ife,izone
       Integer(kind=8),allocatable,dimension(:,:) :: ief,ien
       Real*8,allocatable,dimension(:,:) :: x,xce,xcf,dq
-      Real*8,allocatable,dimension(:) :: q
+      Real*8,allocatable,dimension(:) :: s,q
+      Real*8,allocatable,dimension(:,:,:) :: ssx
       Integer(kind=4) :: ierr,nz,k
       Integer(kind=8) :: n,ifnt(0:4),i,j
       Logical, parameter :: itest = .FALSE.
@@ -96,6 +97,7 @@ c--- count ghost cells
 c--- create arrays to hold cell & face data
       allocate( ief(0:6,nel),ien(0:8,nel), STAT=ierr)
       allocate( xce(3,net),xcf(3,nfa),q(net),dq(3,net), STAT=ierr)
+      allocate( ssx(3,3,nfa),s(nfa), STAT=ierr)
 
 c--- call a subroutine to create cells
       call make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
@@ -120,7 +122,7 @@ c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
 
 c--- call a subroutine to create additional geometric data
       call make_geometry(nz,nno,nel,nge,net,nfa,
-     &                   ifn,ife,izone,x,ief,ien,xce,xcf)
+     &                   ifn,ife,izone,x,ief,ien,xce,xcf,s,ssx)
 
 c--- call a subroutine to test gradient reconstruction
       call test_gradient(nz,nno,nel,nge,net,nfa,
@@ -531,10 +533,10 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171106
+c *** Last modified: IN <nompelis@nobelware.com> 20171121
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,
-     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf)
+     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,s,ssx)
       Use inMesh_Elements
       Implicit None
       Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
@@ -545,18 +547,20 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),intent(IN) :: ief(0:6,nel)
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
       Real*8,intent(IN) :: x(3,nno)
-      Real*8,intent(OUT) :: xce(3,net),xcf(3,nfa)
+      Real*8,intent(OUT) :: xce(3,net),xcf(3,nfa), s(nfa),ssx(3,3,nfa)
       Integer(kind=8) :: ntri,nqua
       Integer(kind=4) :: ierr
 
       Integer(kind=8) :: i,j,k,ii
-      Real*8 :: dx1(3),dx2(3), xn(3),xl
+      Real*8 :: dx1(3),dx2(3), xn(3),xl,yn(3),yl
       Logical, parameter :: itest = .TRUE.
 
 
       PRINT*,'Creating geometry'
       xce(:,:) = 0.0d0
       xcf(:,:) = 0.0d0
+      s(:) = 0.0d0
+      ssx(:,:,:) = 0.0d0
 
 
 c--- form element centroids (all subjectivity in construction is in inMesh API)
@@ -624,17 +628,64 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
       close(10)
 #endif
 
-c--- form face centroids
+c--- form face centroids, face basis and face area
       do j = 1,nfa
          if( ifn(0,j) .eq. 3 ) then
             xcf(:,j) = (x(:, ifn(1,j) ) +
      &                  x(:, ifn(2,j) ) +
      &                  x(:, ifn(3,j) ))/3.0d0
+
+            dx1(:) = x(:, ifn(2,j)) - x(:, ifn(1,j))
+            dx2(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+            xn(1) =  dx1(2)*dx2(3) -dx2(2)*dx1(3)
+            xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+            xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
+            xl = sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+            s(j) = 0.5d0*xl**2
+            xl = 1.0d0/xl
+            ssx(:,1,j) = xn(:)*xl
+            xl = 1.0d0/sqrt(dx1(1)**2 + dx1(2)**2 + dx1(3)**2)
+            ssx(:,2,j) = dx1(:)*xl
+            xn(1) =  ssx(2,1,j)*ssx(3,2,j) -ssx(2,2,j)*ssx(3,1,j)
+            xn(2) = -ssx(1,1,j)*ssx(3,2,j) +ssx(1,2,j)*ssx(3,1,j)
+            xn(3) =  ssx(1,1,j)*ssx(2,2,j) -ssx(1,2,j)*ssx(2,1,j)
+            xl = 1.0d0/sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+            ssx(:,3,j) = xn(:)*xl
+
          else if( ifn(0,j) .eq. 4 ) then
             xcf(:,j) = (x(:, ifn(1,j) )*2.0d0 +
      &                  x(:, ifn(2,j) ) +
      &                  x(:, ifn(3,j) )*2.0d0 +
      &                  x(:, ifn(4,j) ))/6.0d0
+
+            dx1(:) = x(:, ifn(2,j)) - x(:, ifn(1,j))
+            dx2(:) = x(:, ifn(3,j)) - x(:, ifn(1,j))
+            xn(1) =  dx1(2)*dx2(3) -dx2(2)*dx1(3)
+            xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+            xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
+            xl = sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+            s(j) = 0.5d0*xl**2
+
+            xl = 1.0d0/sqrt(dx2(1)**2 + dx2(2)**2 + dx2(3)**2)
+            ssx(:,2,j) = dx2(:)*xl
+
+            dx1(:) = dx2(:)
+            dx2(:) = x(:, ifn(4,j)) - x(:, ifn(1,j))
+            yn(1) = +dx1(2)*dx2(3) -dx2(2)*dx1(3)
+            yn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
+            yn(3) = +dx1(1)*dx2(2) -dx2(1)*dx1(2)
+            yl = sqrt(yn(1)**2 + yn(2)**2 + yn(3)**2)
+            s(j) = s(j) + 0.5d0*yl**2
+
+            xn(:) = xn(:) + yn(:)
+            xl = 1.0d0/sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+            ssx(:,1,j) = xn(:)*xl
+            xn(1) =  ssx(2,1,j)*ssx(3,2,j) -ssx(2,2,j)*ssx(3,1,j)
+            xn(2) = -ssx(1,1,j)*ssx(3,2,j) +ssx(1,2,j)*ssx(3,1,j)
+            xn(3) =  ssx(1,1,j)*ssx(2,2,j) -ssx(1,2,j)*ssx(2,1,j)
+            xl = 1.0d0/sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
+            ssx(:,3,j) = xn(:)*xl
+
          else
             PRINT*,'Problematic face!'
             PRINT*,'ifn(0,j)=',ifn(0,j)
