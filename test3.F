@@ -533,7 +533,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171121
+c *** Last modified: IN <nompelis@nobelware.com> 20171127
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,s,ssx)
@@ -811,6 +811,19 @@ c--- (Uses an extrapolation in the face-normal direction!)
             enddo
          endif
       enddo
+      close(10)
+#endif
+
+#ifdef _DEBUG_
+      open(unit=10,file='FACE_BASIS.dat',status='unknown')
+      write(10,*) 'variables = x y z u v w'
+      write(10,*) 'zone T="Face basis"'
+      do j = 1,nfa
+         write(10,100) xcf(:,j),ssx(:,1,j)
+         write(10,100) xcf(:,j),ssx(:,2,j)
+         write(10,100) xcf(:,j),ssx(:,3,j)
+      enddo
+ 100  Format(6(1x,e16.9))
       close(10)
 #endif
 
