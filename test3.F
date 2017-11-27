@@ -8,7 +8,7 @@ c *** This code is intended to be used for testing scalar field gradient
 c *** construction using different methods. It is based off the "demo1" code.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171121
+c *** Last modified: IN <nompelis@nobelware.com> 20171127
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -126,7 +126,7 @@ c--- call a subroutine to create additional geometric data
 
 c--- call a subroutine to test gradient reconstruction
       call test_gradient(nz,nno,nel,nge,net,nfa,
-     &                   ifn,ife,izone,x,ief,ien,xce,xcf,q,dq)
+     &                   ifn,ife,izone,x,ief,ien,xce,xcf,ssx,q,dq)
 
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien, xce, xcf, q, dq )
@@ -144,10 +144,10 @@ c *** Nov. 2013) with N=2
 c *** 3. The WLSQ(G) according to SK&H
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171110
+c *** Last modified: IN <nompelis@nobelware.com> 20171127
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,
-     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,q,dq)
+     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,ssx,q,dq)
       Implicit None
       Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
       Integer(kind=4),intent(IN) :: nz
@@ -158,6 +158,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
       Real*8,intent(IN) :: x(3,nno)
       Real*8,intent(IN) :: xce(3,net),xcf(3,nfa)
+      Real*8,intent(IN) :: ssx(3,3,nfa)
       Real*8,intent(INOUT) :: q(net),dq(3,net)
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
