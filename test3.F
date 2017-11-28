@@ -8,7 +8,7 @@ c *** This code is intended to be used for testing scalar field gradient
 c *** construction using different methods. It is based off the "demo1" code.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171127
+c *** Last modified: IN <nompelis@nobelware.com> 20171128
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -126,7 +126,7 @@ c--- call a subroutine to create additional geometric data
 
 c--- call a subroutine to test gradient reconstruction
       call test_gradient(nz,nno,nel,nge,net,nfa,
-     &                   ifn,ife,izone,x,ief,ien,xce,xcf,ssx,q,dq)
+     &                   ifn,ife,izone,x,ief,ien,xce,xcf,ssx,s,q,dq)
 
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien, xce, xcf, q, dq )
@@ -149,7 +149,7 @@ c *** Created:       IN <nompelis@nobelware.com> 20171107
 c *** Last modified: IN <nompelis@nobelware.com> 20171128
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,
-     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,ssx,q,dq)
+     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,ssx,s,q,dq)
       Implicit None
       Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
       Integer(kind=4),intent(IN) :: nz
@@ -160,14 +160,14 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
       Real*8,intent(IN) :: x(3,nno)
       Real*8,intent(IN) :: xce(3,net),xcf(3,nfa)
-      Real*8,intent(IN) :: ssx(3,3,nfa)
+      Real*8,intent(IN) :: ssx(3,3,nfa),s(nfa)
       Real*8,intent(INOUT) :: q(net),dq(3,net)
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
       Real*8 :: xx(3),delta
       Integer(kind=4) :: imethod = 4
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
-      Real*8 :: xn(3),delq,rl
+      Real*8 :: xn(3),delq,rl,xy(3)
       Logical, parameter :: itest = .TRUE.
 
 
@@ -431,16 +431,17 @@ c--- form weights
             rl = rd                          ! L_j
             wei(k) =    1.0d0/rl**2          ! w_j
 
-
-
+            xy(:) = xcf(:,j) - xo(:) ! get cent-to-face vector
+            wei(k) = 2.0d0 *
+     &               (xy(1)*ssx(1,1,j) + xy(2)*ssx(2,1,j) + xy(3)*ssx(3,1,j)) /
+     &               (xx(1)*ssx(1,1,j) + xx(2)*ssx(2,1,j) + xx(3)*ssx(3,1,j))
+            wei(k) = wei(k)**2*s(j)/rl
 
             rmat(1:3,1) = rmat(1:3,1) + wei(k)*xx(:)*xx(1)
             rmat(1:3,2) = rmat(1:3,2) + wei(k)*xx(:)*xx(2)
             rmat(1:3,3) = rmat(1:3,3) + wei(k)*xx(:)*xx(3)
             !---- need a 4th equation given the hard-wired 4x4 inversion
             rmat(4,4) = 1.0d0                ! over-write without worries...
-
-
 
             rhs(1:3) = rhs(1:3) + wei(k)*rl*delq*xn(:)
          enddo
