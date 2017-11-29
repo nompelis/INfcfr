@@ -1588,18 +1588,18 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        End subroutine
 
-
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** Routine to calculate the centroid of a pyramid given coordinates of
 c *** its five nodes. Uses a subdivision into two tetrahedra, which means that
 c *** the node ordering of the pyramidal element must adhere to the convention.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171029
-c *** Last modified: IN <nompelis@nobelware.com> 20171031
+c *** Last modified: IN <nompelis@nobelware.com> 20171129
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-       Subroutine inMesh_Pyramid_CentroidFromVertices( x1, x2, x3, x4, x5, xc )
+       Subroutine inMesh_Pyramid_CentroidFromVertices( x1, x2, x3, x4, x5,
+     &                                                 xc, vol )
        Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3),x5(3)
-       Real*8,intent(OUT) :: xc(3)
+       Real*8,intent(OUT) :: xc(3),vol
        Real*8 :: xt(3),dx1(3),dx2(3),dx3(3),v1,v2
 
 
@@ -1629,7 +1629,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        PRINT*,'Centroid 2:',xt(:)
 #endif
 
-       xc(:) = (xc(:)*v1 + xt(:)*v2)/(v1 + v2)
+       vol = v1 + v2
+       xc(:) = (xc(:)*v1 + xt(:)*v2)/vol
+       vol = vol/6.0d0
 #ifdef _DEBUG_
        PRINT*,'Centroid:',xc(:)
 #endif
@@ -1643,11 +1645,12 @@ c *** the node ordering of the wedge element must adhere to the convention.
 c *** The choice of internal subdivision to tetrahedra is described in my notes.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171029
-c *** Last modified: IN <nompelis@nobelware.com> 20171101
+c *** Last modified: IN <nompelis@nobelware.com> 20171129
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-       Subroutine inMesh_Wedge_CentroidFromVertices( x1, x2, x3, x4, x5, x6, xc)
+       Subroutine inMesh_Wedge_CentroidFromVertices( x1, x2, x3, x4, x5, x6,
+     &                                               xc, vol )
        Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3),x5(3),x6(3)
-       Real*8,intent(OUT) :: xc(3)
+       Real*8,intent(OUT) :: xc(3),vol
        Real*8 :: xt(3),v1,v2,v3
 C      Real*8 :: dx1(3),dx2(3),dx3(3)   ! for slightly less arithm. computation
 
@@ -1659,9 +1662,12 @@ C      dx3(:) =  x4(:) - x1(:)
 C      v1 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
 C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
 C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+#ifdef _DEBUG_
+C      PRINT*,'Volume*6 of tetrahedron 1 2 3 4',v1
+#endif
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x4, v1 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 2 3 4',v1
+       PRINT*,'Volume of tetrahedron 1 2 3 4',v1
        PRINT*,'Centroid 1:',xc(:)
 #endif
        xc(:) = xc(:)*v1
@@ -1673,9 +1679,12 @@ C      dx3(:) =  x6(:) - x2(:)
 C      v2 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
 C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
 C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+#ifdef _DEBUG_
+C      PRINT*,'Volume*6 of tetrahedron 2 3 4 6',v2
+#endif
        call inMesh_Tetrahedron_VolumeFromVertices( x2, x3, x4, x6, v2 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 2 3 4 6',v2
+       PRINT*,'Volume of tetrahedron 2 3 4 6',v2
        PRINT*,'Centroid 2:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v2
@@ -1686,14 +1695,18 @@ C      dx3(:) =  x5(:) - x2(:)
 C      v3 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
 C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
 C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
+#ifdef _DEBUG_
+C      PRINT*,'Volume*6 of tetrahedron 2 6 4 5',v3
+#endif
        call inMesh_Tetrahedron_VolumeFromVertices( x2, x6, x4, x5, v3 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 2 6 4 5',v3
+       PRINT*,'Volume of tetrahedron 2 6 4 5',v3
        PRINT*,'Centroid 3:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v3
 
-       xc(:) = xc(:)/(v1 + v2 + v3)
+       vol = v1 + v2 + v3
+       xc(:) = xc(:)/vol
 
        End subroutine
 
@@ -1704,19 +1717,19 @@ c *** the node ordering of the brick element must adhere to the convention.
 c *** The choice of internal subdivision to tetrahedra is described in my notes.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171101
-c *** Last modified: IN <nompelis@nobelware.com> 20171101
+c *** Last modified: IN <nompelis@nobelware.com> 20171129
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Subroutine inMesh_Brick_CentroidFromVertices(
-     &                  x1, x2, x3, x4, x5, x6, x7, x8, xc)
+     &                  x1, x2, x3, x4, x5, x6, x7, x8, xc, vol )
        Real*8,intent(IN) :: x1(3),x2(3),x3(3),x4(3),x5(3),x6(3),x7(3),x8(3)
-       Real*8,intent(OUT) :: xc(3)
+       Real*8,intent(OUT) :: xc(3),vol
        Real*8 :: xt(3),v1,v2,v3,v4,v5,v6
 
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x3, x7, xc )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x7, v1 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 2 3 7',v1
+       PRINT*,'Volume of tetrahedron 1 2 3 7',v1
        PRINT*,'Centroid 1:',xc(:)
 #endif
        xc(:) = xc(:)*v1
@@ -1724,7 +1737,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x7, x6, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x7, x6, v2 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 2 7 6',v2
+       PRINT*,'Volume of tetrahedron 1 2 7 6',v2
        PRINT*,'Centroid 2:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v2
@@ -1732,7 +1745,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x6, x7, x5, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x6, x7, x5, v3 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 6 7 5',v3
+       PRINT*,'Volume of tetrahedron 1 6 7 5',v3
        PRINT*,'Centroid 3:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v3
@@ -1740,7 +1753,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x3, x4, x7, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x3, x4, x7, v4 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 3 4 7',v4
+       PRINT*,'Volume of tetrahedron 1 3 4 7',v4
        PRINT*,'Centroid 4:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v4
@@ -1748,7 +1761,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x7, x4, x8, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x7, x4, x8, v5 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 7 4 8',v5
+       PRINT*,'Volume of tetrahedron 1 7 4 8',v5
        PRINT*,'Centroid 5:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v5
@@ -1756,12 +1769,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x7, x8, x5, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x7, x8, x5, v6 )
 #ifdef _DEBUG_
-       PRINT*,'Volume*6 of tetrahedron 1 7 8 5',v6
+       PRINT*,'Volume of tetrahedron 1 7 8 5',v6
        PRINT*,'Centroid 6:',xc(:)
 #endif
        xc(:) = xc(:) + xt(:)*v6
 
-       xc(:) = xc(:)/(v1 + v2 + v3 + v4 + v5 + v6)
+       vol = v1 + v2 + v3 + v4 + v5 + v6
+       xc(:) = xc(:)/vol
 
        End subroutine
 
