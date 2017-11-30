@@ -9,7 +9,7 @@ c *** construction using different methods. It is based off the "demo1" code
 c *** and has been substantially modified.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171129
+c *** Last modified: IN <nompelis@nobelware.com> 20171130
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -84,6 +84,13 @@ c--- write a tecplot file with all _faces_ (using "nfa" for no. of elements)
       endif
       enddo
       close(10)
+
+c--- swap Fluent's convention of cr,cl to mine of left,right (in array "ife")
+      do n = 1,nfa
+         k = ife(1,n)
+         ife(1,n) = ife(2,n)
+         ife(2,n) = k
+      enddo
 
 c--- count ghost cells
       nge = 0
