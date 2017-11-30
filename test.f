@@ -6,7 +6,7 @@ c *** each cell by returning the element's nodes in an array; the node ordering
 c *** is specific to my own conventions outlined in my notes.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171016
+c *** Last modified: IN <nompelis@nobelware.com> 20171130
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -78,6 +78,13 @@ c--- write a tecplot file with all _faces_ (using "nfa" for no. of elements)
       enddo
       close(10)
 
+
+c--- swap Fluent's convention of cr,cl to mine of left,right (in array "ife")
+      do n = 1,nfa
+         k = ife(1,n)
+         ife(1,n) = ife(2,n)
+         ife(2,n) = k
+      enddo
 
 c--- call a subroutine to create cells
       call make_cells(nz,nno,nel,nfa,ifn,ife,izone,x)
