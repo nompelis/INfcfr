@@ -10,6 +10,7 @@ AR_OPTS = rsc $(LIB_NAME).a
 
 COPTS += -D_DEBUG_
 FOPTS += -D_DEBUG_ -fbounds-check
+FOPTS += -D_DEBUG2_
 
 all: lib demo3
 

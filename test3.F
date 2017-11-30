@@ -5,10 +5,11 @@ c *** a case file. Then, it makes cells by invoking a subroutine to construct
 c *** each cell by returning the element's nodes in an array; the node ordering
 c *** is specific to my own conventions outlined in my notes.
 c *** This code is intended to be used for testing scalar field gradient
-c *** construction using different methods. It is based off the "demo1" code.
+c *** construction using different methods. It is based off the "demo1" code
+c *** and has been substantially modified.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171128
+c *** Last modified: IN <nompelis@nobelware.com> 20171129
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -17,7 +18,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),allocatable,dimension(:,:) :: ifn,ife,izone
       Integer(kind=8),allocatable,dimension(:,:) :: ief,ien
       Real*8,allocatable,dimension(:,:) :: x,xce,xcf,dq
-      Real*8,allocatable,dimension(:) :: s,q
+      Real*8,allocatable,dimension(:) :: s,q,vol
       Real*8,allocatable,dimension(:,:,:) :: ssx
       Integer(kind=4) :: ierr,nz,k
       Integer(kind=8) :: n,ifnt(0:4),i,j
@@ -96,8 +97,9 @@ c--- count ghost cells
 
 c--- create arrays to hold cell & face data
       allocate( ief(0:6,nel),ien(0:8,nel), STAT=ierr)
-      allocate( xce(3,net),xcf(3,nfa),q(net),dq(3,net), STAT=ierr)
-      allocate( ssx(3,3,nfa),s(nfa), STAT=ierr)
+      allocate( xce(3,net),vol(nel), STAT=ierr)
+      allocate( xcf(3,nfa),ssx(3,3,nfa),s(nfa), STAT=ierr)
+      allocate( q(net),dq(3,net), STAT=ierr)
 
 c--- call a subroutine to create cells
       call make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
@@ -122,14 +124,14 @@ c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
 
 c--- call a subroutine to create additional geometric data
       call make_geometry(nz,nno,nel,nge,net,nfa,
-     &                   ifn,ife,izone,x,ief,ien,xce,xcf,s,ssx)
+     &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,s,ssx)
 
 c--- call a subroutine to test gradient reconstruction
       call test_gradient(nz,nno,nel,nge,net,nfa,
      &                   ifn,ife,izone,x,ief,ien,xce,xcf,ssx,s,q,dq)
 
 c--- drop arrays
-      deallocate( x, ifn, ife, izone, ief, ien, xce, xcf, q, dq )
+      deallocate( x, ifn, ife, izone, ief, ien, xce, vol, xcf, s, ssx, q, dq )
 
       End
 
@@ -146,7 +148,7 @@ c *** Nov. 2013) with N=2
 c *** 4. The WLSQ(G) according to SK&H
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171128
+c *** Last modified: IN <nompelis@nobelware.com> 20171129
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,ssx,s,q,dq)
@@ -165,9 +167,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
       Real*8 :: xx(3),delta
-      Integer(kind=4) :: imethod = 4
+      Integer(kind=4) :: imethod = 5
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
-      Real*8 :: xn(3),delq,rl,xy(3)
+      Real*8 :: xn(3),delq,rl,xy(3),beta
       Logical, parameter :: itest = .TRUE.
 
 
@@ -453,6 +455,56 @@ c--- form weights
      &             rmat(1:3,3)*rhs(3) +
      &             rmat(1:3,4)*rhs(4)
 
+         Case(5)   ! SK&H GLSQ (i.e. hybrid formula of G-G and WLSQ(G))
+
+c--- form weights
+         beta = 1.0d0      ! TEMPORARY
+
+         wem = 0.0d0                  ! maximum weight value
+         xo(:) = xce(:,i)             ! get cell centroid
+         do k = 1,ief(0,i)            ! loop over faces of element
+            j = ief(k,i)              ! get face number
+            if( ife(1,j) .eq. i ) then
+               ii = ife(2,j)          ! get adjacent cell number
+            else
+               ii = ife(1,j)          ! get adjacent cell number
+            endif
+            xx(:) = xce(:,ii) - xo(:) ! get cent-to-cent vector
+            rd = sqrt( xx(1)**2 + xx(2)**2 + xx(3)**2 )
+
+            xn(:) = xx(:)/rd                 ! (x_L)_j
+            delq = q(ii) - q(i)              ! (Delta q)_j
+            rl = rd                          ! L_j
+            wei(k) =    1.0d0/rl**2          ! w_j
+
+            xy(:) = xcf(:,j) - xo(:) ! get cent-to-face vector
+            wei(k) = 2.0d0 *
+     &               (xy(1)*ssx(1,1,j) + xy(2)*ssx(2,1,j) + xy(3)*ssx(3,1,j)) /
+     &               (xx(1)*ssx(1,1,j) + xx(2)*ssx(2,1,j) + xx(3)*ssx(3,1,j))
+            wei(k) = wei(k)**2*s(j)/rl
+
+            rmat(1:3,1) = rmat(1:3,1) + beta*wei(k)*xx(:)*xx(1)
+            rmat(1:3,2) = rmat(1:3,2) + beta*wei(k)*xx(:)*xx(2)
+            rmat(1:3,3) = rmat(1:3,3) + beta*wei(k)*xx(:)*xx(3)
+
+            rhs(1:3) = rhs(1:3) + beta*wei(k)*rl*delq*xn(:)
+         enddo
+
+       ! rmat(1,1) = rmat(1,1) + 2.0d0*(1.0d0 - beta)*vol ! HERE
+       ! rmat(2,2) = rmat(2,2) + 2.0d0*(1.0d0 - beta)*vol ! HERE
+       ! rmat(3,3) = rmat(3,3) + 2.0d0*(1.0d0 - beta)*vol ! HERE
+
+
+         !---- need a 4th equation given the hard-wired 4x4 inversion
+         rmat(4,4) = 1.0d0                ! over-write without worries...
+
+         call invert_fbf( rmat )
+
+         dq(:,i) = rmat(1:3,1)*rhs(1) +
+     &             rmat(1:3,2)*rhs(2) +
+     &             rmat(1:3,3)*rhs(3) +
+     &             rmat(1:3,4)*rhs(4)
+
          End Select
 
       enddo
@@ -614,10 +666,10 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171127
+c *** Last modified: IN <nompelis@nobelware.com> 20171129
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      Subroutine make_geometry(nz,nno,nel,nge,net,
-     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,s,ssx)
+      Subroutine make_geometry(nz,nno,nel,nge,net,nfa,
+     &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,s,ssx)
       Use inMesh_Elements
       Implicit None
       Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
@@ -628,7 +680,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),intent(IN) :: ief(0:6,nel)
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
       Real*8,intent(IN) :: x(3,nno)
-      Real*8,intent(OUT) :: xce(3,net),xcf(3,nfa), s(nfa),ssx(3,3,nfa)
+      Real*8,intent(OUT) :: xce(3,net),vol(nel),xcf(3,nfa), s(nfa),ssx(3,3,nfa)
       Integer(kind=8) :: ntri,nqua
       Integer(kind=4) :: ierr
 
@@ -665,13 +717,18 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(2,i) ),
      &                x(1, ien(3,i) ),
      &                x(1, ien(4,i) ), xce(1,i) )
+            call inMesh_Tetrahedron_VolumeFromVertices(
+     &                x(1, ien(1,i) ),
+     &                x(1, ien(2,i) ),
+     &                x(1, ien(3,i) ),
+     &                x(1, ien(4,i) ), vol(i) )
          else if( ntri .eq. 4 .AND. nqua .eq. 1 ) then
             call inMesh_Pyramid_CentroidFromVertices(
      &                x(1, ien(1,i) ),
      &                x(1, ien(2,i) ),
      &                x(1, ien(3,i) ),
      &                x(1, ien(4,i) ),
-     &                x(1, ien(5,i) ), xce(1,i) )
+     &                x(1, ien(5,i) ), xce(1,i), vol(i) )
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Wedge_CentroidFromVertices(
      &                x(1, ien(1,i) ),
@@ -679,7 +736,7 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(3,i) ),
      &                x(1, ien(4,i) ),
      &                x(1, ien(5,i) ),
-     &                x(1, ien(6,i) ), xce(1,i) )
+     &                x(1, ien(6,i) ), xce(1,i), vol(i) )
          else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
             call inMesh_Brick_CentroidFromVertices(
      &                x(1, ien(1,i) ),
@@ -689,14 +746,14 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(5,i) ),
      &                x(1, ien(6,i) ),
      &                x(1, ien(7,i) ),
-     &                x(1, ien(8,i) ), xce(1,i) )
+     &                x(1, ien(8,i) ), xce(1,i), vol(i) )
          else
             PRINT*,'Problematic element!'
             PRINT*,'ntri=',ntri,'nqua=',nqua
             STOP
          endif
 #ifdef _DEBUG2_
-         PRINT*,'Centroid:',xce(:,i)
+         PRINT*,'Centroid:',xce(:,i),vol(i)
 #endif
       enddo
 #ifdef _DEBUG_
