@@ -673,7 +673,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171129
+c *** Last modified: IN <nompelis@nobelware.com> 20171130
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,nfa,
      &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,s,ssx)
@@ -760,7 +760,9 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
             STOP
          endif
 #ifdef _DEBUG2_
-         PRINT*,'Centroid:',xce(:,i),vol(i)
+         WRITE(*,300) 'Centroid:',xce(:,i)
+         WRITE(*,300) 'Volume:  ',vol(i)
+ 300     Format(a9,3(1x,e20.13))
 #endif
       enddo
 #ifdef _DEBUG_
@@ -839,7 +841,8 @@ c--- form face centroids, face basis and face area
 
 
 #ifdef _DEBUG2_
-         PRINT*,'Centroid:',xcf(:,i)
+         WRITE(*,200) 'Face centroid:',xcf(:,i)
+ 200     Format(a14,3(1x,e20.13))
 #endif
       enddo
 #ifdef _DEBUG_
