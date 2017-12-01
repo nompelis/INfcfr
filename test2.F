@@ -146,7 +146,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171106
+c *** Last modified: IN <nompelis@nobelware.com> 20171201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf)
@@ -165,7 +165,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=4) :: ierr
 
       Integer(kind=8) :: i,j,k,ii
-      Real*8 :: dx1(3),dx2(3), xn(3),xl
+      Real*8 :: dx1(3),dx2(3), xn(3),xl,vol
       Logical, parameter :: itest = .TRUE.
 
 
@@ -201,7 +201,7 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(2,i) ),
      &                x(1, ien(3,i) ),
      &                x(1, ien(4,i) ),
-     &                x(1, ien(5,i) ), xce(1,i) )
+     &                x(1, ien(5,i) ), xce(1,i), vol )
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Wedge_CentroidFromVertices(
      &                x(1, ien(1,i) ),
@@ -209,7 +209,7 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(3,i) ),
      &                x(1, ien(4,i) ),
      &                x(1, ien(5,i) ),
-     &                x(1, ien(6,i) ), xce(1,i) )
+     &                x(1, ien(6,i) ), xce(1,i), vol )
          else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
             call inMesh_Brick_CentroidFromVertices(
      &                x(1, ien(1,i) ),
@@ -219,7 +219,7 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(5,i) ),
      &                x(1, ien(6,i) ),
      &                x(1, ien(7,i) ),
-     &                x(1, ien(8,i) ), xce(1,i) )
+     &                x(1, ien(8,i) ), xce(1,i), vol )
          else
             PRINT*,'Problematic element!'
             PRINT*,'ntri=',ntri,'nqua=',nqua
