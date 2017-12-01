@@ -85,9 +85,9 @@ c--- write a tecplot file with all _faces_ (using "nfa" for no. of elements)
 
 c--- swap Fluent's convention of cr,cl to mine of left,right (in array "ife")
       do n = 1,nfa
-         k = ife(1,n)
+         i = ife(1,n)
          ife(1,n) = ife(2,n)
-         ife(2,n) = k
+         ife(2,n) = i
       enddo
 
 c--- count ghost cells
