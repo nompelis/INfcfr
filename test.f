@@ -189,33 +189,33 @@ c--- form individual volume elements (cells) from surface elements
             call inMesh_Elements_FormTetrahedronFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- modify nodes to plot as a "brick" element
-            ieno(5:8) = ieno(4)
-            ieno(4) = ieno(3)
 c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
             ief(:,i) = iefo(:)
+c--- modify nodes to plot as a "brick" element
+            ieno(5:8) = ieno(4)
+            ieno(4) = ieno(3)
          else if( ntri .eq. 4 .AND. nqua .eq. 1 ) then
             call inMesh_Elements_FormPyramidFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- modify nodes to plot as a "brick" element
-            ieno(6:8) = ieno(5)
 c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
             ief(:,i) = iefo(:)
+c--- modify nodes to plot as a "brick" element
+            ieno(6:8) = ieno(5)
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- modify faces-of-element and nodes-of-element array
+            ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
 c--- modify nodes to plot as a "brick" element
             ieno(7:8) = ieno(6)
             ieno(6) = ieno(5)
             ieno(5) = ieno(4)
             ieno(4) = ieno(3)
-c--- modify faces-of-element and nodes-of-element array
-            ien(:,i) = ieno(:)
-            ief(:,i) = iefo(:)
          else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
             call inMesh_Elements_FormBrickFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
