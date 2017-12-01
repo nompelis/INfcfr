@@ -102,7 +102,7 @@ c *** NOTE: At this point in the development process I am testing for tets and
 c *** I have a _hardwired_ tet-cell output testing code block.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171024
+c *** Last modified: IN <nompelis@nobelware.com> 20171201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x)
       Use inMesh_Elements
@@ -118,7 +118,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),allocatable,dimension(:,:) :: ief,ien
       Integer(kind=8) :: i,j,k
       Integer(kind=8) :: ntri,nqua
-      Integer(kind=8) :: ieno(0:8),iefo(0:8)
+      Integer(kind=8) :: ieno(0:8),iefo(0:6)
       Logical, parameter :: itest = .TRUE.
 
 
@@ -178,10 +178,12 @@ c--- form individual volume elements (cells) from surface elements
             if( ifn(0, ief(k,i) ) .eq. 4 ) nqua = nqua + 1
          enddo
          if( ntri+nqua .lt. 4 .OR.  ntri+nqua .gt. 6 ) then
-            PRINT*,'Problematic element!'
+            PRINT*,'Problematic element! (one) i=',i
             PRINT*,'ntri=',ntri,'nqua=',nqua
             STOP
          endif
+
+         iefo(:) = 0
 
          if( ntri .eq. 4 .AND. nqua .eq. 0 ) then
             call inMesh_Elements_FormTetrahedronFromFaces(
@@ -190,12 +192,18 @@ c--- form individual volume elements (cells) from surface elements
 c--- modify nodes to plot as a "brick" element
             ieno(5:8) = ieno(4)
             ieno(4) = ieno(3)
+c--- modify faces-of-element and nodes-of-element array
+            ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
          else if( ntri .eq. 4 .AND. nqua .eq. 1 ) then
             call inMesh_Elements_FormPyramidFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
 c--- modify nodes to plot as a "brick" element
             ieno(6:8) = ieno(5)
+c--- modify faces-of-element and nodes-of-element array
+            ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
@@ -205,12 +213,18 @@ c--- modify nodes to plot as a "brick" element
             ieno(6) = ieno(5)
             ieno(5) = ieno(4)
             ieno(4) = ieno(3)
+c--- modify faces-of-element and nodes-of-element array
+            ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
          else if( ntri .eq. 0 .AND. nqua .eq. 6 ) then
             call inMesh_Elements_FormBrickFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
+c--- modify faces-of-element and nodes-of-element array
+            ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
          else
-            PRINT*,'Problematic element!'
+            PRINT*,'Problematic element! (two) i=',i
             PRINT*,'ntri=',ntri,'nqua=',nqua
             STOP
          endif
@@ -227,6 +241,8 @@ c--- THIS IS FOR DEVELOPMENT TESTING PURPOSES
 c--- close the file; THIS IS FOR DEVELOPMENT TESTING PURPOSES
       close(10)
       ENDIF
+
+      deallocate( ien, ief )
 
       End subroutine
 

@@ -9,7 +9,7 @@ LINK_OPTS = -shared -Wl,-soname,$(LIB_NAME).so -o $(LIB_NAME).so
 AR_OPTS = rsc $(LIB_NAME).a
 
 COPTS += -D_DEBUG_
-FOPTS += -D_DEBUG_
+FOPTS += -D_DEBUG_ -fbounds-check
 
 all: lib demo2
 
