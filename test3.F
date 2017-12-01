@@ -135,7 +135,7 @@ c--- call a subroutine to create additional geometric data
 
 c--- call a subroutine to test gradient reconstruction
       call test_gradient(nz,nno,nel,nge,net,nfa,
-     &                   ifn,ife,izone,x,ief,ien,xce,xcf,ssx,s,q,dq)
+     &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
 
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien, xce, vol, xcf, s, ssx, q, dq )
@@ -155,10 +155,10 @@ c *** Nov. 2013) with N=2
 c *** 4. The WLSQ(G) according to SK&H
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171129
+c *** Last modified: IN <nompelis@nobelware.com> 20171201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      Subroutine test_gradient(nz,nno,nel,nge,net,
-     &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf,ssx,s,q,dq)
+      Subroutine test_gradient(nz,nno,nel,nge,net,nfa,
+     &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
       Implicit None
       Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
       Integer(kind=4),intent(IN) :: nz
@@ -169,14 +169,14 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
       Real*8,intent(IN) :: x(3,nno)
       Real*8,intent(IN) :: xce(3,net),xcf(3,nfa)
-      Real*8,intent(IN) :: ssx(3,3,nfa),s(nfa)
+      Real*8,intent(IN) :: vol(nel),ssx(3,3,nfa),s(nfa)
       Real*8,intent(INOUT) :: q(net),dq(3,net)
 
       Integer(kind=8) :: i,j,k,ii,ieni(8)
       Real*8 :: xx(3),delta
       Integer(kind=4) :: imethod = 5
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
-      Real*8 :: xn(3),delq,rl,xy(3),beta
+      Real*8 :: xn(3),delq,rl,xy(3),beta,sgn
       Logical, parameter :: itest = .TRUE.
 
 
@@ -418,7 +418,7 @@ c--- form weights
          dq(:,i) = rmat(1:3,1)*rhs(1) +
      &             rmat(1:3,2)*rhs(2) +
      &             rmat(1:3,3)*rhs(3) +
-     &             rmat(1:3,4)*rhs(4)
+     &             rmat(1:3,4)*rhs(4)      ! last entry is not needed
 
          Case(4)   ! SK&H WLSQ(G)
 
@@ -460,12 +460,12 @@ c--- form weights
          dq(:,i) = rmat(1:3,1)*rhs(1) +
      &             rmat(1:3,2)*rhs(2) +
      &             rmat(1:3,3)*rhs(3) +
-     &             rmat(1:3,4)*rhs(4)
+     &             rmat(1:3,4)*rhs(4)      ! last entry is not needed
 
          Case(5)   ! SK&H GLSQ (i.e. hybrid formula of G-G and WLSQ(G))
 
 c--- form weights
-         beta = 1.0d0      ! TEMPORARY
+         beta = 0.0d0      ! TEMPORARY (to force only G-G)
 
          wem = 0.0d0                  ! maximum weight value
          xo(:) = xce(:,i)             ! get cell centroid
@@ -473,8 +473,10 @@ c--- form weights
             j = ief(k,i)              ! get face number
             if( ife(1,j) .eq. i ) then
                ii = ife(2,j)          ! get adjacent cell number
+               sgn = +1.0d0           ! outward-pointing convention
             else
                ii = ife(1,j)          ! get adjacent cell number
+               sgn = -1.0d0           ! outward-pointing convention
             endif
             xx(:) = xce(:,ii) - xo(:) ! get cent-to-cent vector
             rd = sqrt( xx(1)**2 + xx(2)**2 + xx(3)**2 )
@@ -490,17 +492,24 @@ c--- form weights
      &               (xx(1)*ssx(1,1,j) + xx(2)*ssx(2,1,j) + xx(3)*ssx(3,1,j))
             wei(k) = wei(k)**2*s(j)/rl
 
+            !--- same entries as WLSQ(G) weighed by beta (Eq.14 with D=1)
             rmat(1:3,1) = rmat(1:3,1) + beta*wei(k)*xx(:)*xx(1)
             rmat(1:3,2) = rmat(1:3,2) + beta*wei(k)*xx(:)*xx(2)
             rmat(1:3,3) = rmat(1:3,3) + beta*wei(k)*xx(:)*xx(3)
 
+            !--- same entries as WLSQ(G) weighed by beta (Eq.14 with D=1)
             rhs(1:3) = rhs(1:3) + beta*wei(k)*rl*delq*xn(:)
+
+            !--- augmenting RHS with G-G RHS (Eq.14 with D=1)
+            rhs(1:3) = rhs(1:3) + 2.0d0*(1.0d0 - beta) *
+     &                            0.5d0*s(j)*sgn*ssx(:,1,j)*(q(ii)+q(i))
+     &   !                        0.5d0*s(j)*sgn*ssx(:,1,j)*delq
          enddo
 
-       ! rmat(1,1) = rmat(1,1) + 2.0d0*(1.0d0 - beta)*vol ! HERE
-       ! rmat(2,2) = rmat(2,2) + 2.0d0*(1.0d0 - beta)*vol ! HERE
-       ! rmat(3,3) = rmat(3,3) + 2.0d0*(1.0d0 - beta)*vol ! HERE
-
+         !--- augmenting LHS diagonal entries from G-G (Eq.14 with D=1 / Eq.15)
+         rmat(1,1) = rmat(1,1) + 2.0d0*(1.0d0 - beta)*vol(i)
+         rmat(2,2) = rmat(2,2) + 2.0d0*(1.0d0 - beta)*vol(i)
+         rmat(3,3) = rmat(3,3) + 2.0d0*(1.0d0 - beta)*vol(i)
 
          !---- need a 4th equation given the hard-wired 4x4 inversion
          rmat(4,4) = 1.0d0                ! over-write without worries...
@@ -510,7 +519,7 @@ c--- form weights
          dq(:,i) = rmat(1:3,1)*rhs(1) +
      &             rmat(1:3,2)*rhs(2) +
      &             rmat(1:3,3)*rhs(3) +
-     &             rmat(1:3,4)*rhs(4)
+     &             rmat(1:3,4)*rhs(4)      ! last entry is not needed
 
          End Select
 
