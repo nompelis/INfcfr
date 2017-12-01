@@ -6,7 +6,7 @@ c *** each cell by returning the element's nodes in an array; the node ordering
 c *** is specific to my own conventions outlined in my notes.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171130
+c *** Last modified: IN <nompelis@nobelware.com> 20171201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -15,7 +15,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=8),allocatable,dimension(:,:) :: ifn,ife,izone
       Real*8,allocatable,dimension(:,:) :: x
       Integer(kind=4) :: ierr,nz,k
-      Integer(kind=8) :: n,ifnt(0:4)
+      Integer(kind=8) :: n,ifnt(0:4),it
 
 
 c--- read a Fluent case-file and transfer it to arrays
@@ -81,9 +81,9 @@ c--- write a tecplot file with all _faces_ (using "nfa" for no. of elements)
 
 c--- swap Fluent's convention of cr,cl to mine of left,right (in array "ife")
       do n = 1,nfa
-         k = ife(1,n)
+         it = ife(1,n)
          ife(1,n) = ife(2,n)
-         ife(2,n) = k
+         ife(2,n) = it
       enddo
 
 c--- call a subroutine to create cells
