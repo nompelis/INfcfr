@@ -474,8 +474,9 @@ c--- form individual volume elements (cells) from surface elements
             call inMesh_Elements_FormTetrahedronFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- store data to returned array
+c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
 c--- modify nodes to plot as a "brick" element
             ieno(5:8) = ieno(4)
             ieno(4) = ieno(3)
