@@ -9,7 +9,7 @@ c *** construction using different methods. It is based off the "demo1" code
 c *** and has been substantially modified.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171130
+c *** Last modified: IN <nompelis@nobelware.com> 20171201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -87,9 +87,9 @@ c--- write a tecplot file with all _faces_ (using "nfa" for no. of elements)
 
 c--- swap Fluent's convention of cr,cl to mine of left,right (in array "ife")
       do n = 1,nfa
-         k = ife(1,n)
+         i = ife(1,n)
          ife(1,n) = ife(2,n)
-         ife(2,n) = k
+         ife(2,n) = i
       enddo
 
 c--- count ghost cells
@@ -993,7 +993,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171102
+c *** Last modified: IN <nompelis@nobelware.com> 20171201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
       Use inMesh_Elements
@@ -1010,7 +1010,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       Integer(kind=8) :: i,j,k
       Integer(kind=8) :: ntri,nqua
-      Integer(kind=8) :: ieno(0:8),iefo(0:8)
+      Integer(kind=8) :: ieno(0:8),iefo(0:6)
       Logical, parameter :: itest = .TRUE.
 
 
@@ -1064,6 +1064,7 @@ c--- form individual volume elements (cells) from surface elements
          nqua = 0
 
          ieno(:) = 0
+         iefo(:) = 0
 
          do k = 1,ief(0,i)
             if( ifn(0, ief(k,i) ) .eq. 3 ) ntri = ntri + 1
@@ -1079,8 +1080,9 @@ c--- form individual volume elements (cells) from surface elements
             call inMesh_Elements_FormTetrahedronFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- store data to returned array
+c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
 c--- modify nodes to plot as a "brick" element
             ieno(5:8) = ieno(4)
             ieno(4) = ieno(3)
@@ -1088,16 +1090,18 @@ c--- modify nodes to plot as a "brick" element
             call inMesh_Elements_FormPyramidFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- store data to returned array
+c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
 c--- modify nodes to plot as a "brick" element
             ieno(6:8) = ieno(5)
          else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
             call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- store data to returned array
+c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
 c--- modify nodes to plot as a "brick" element
             ieno(7:8) = ieno(6)
             ieno(6) = ieno(5)
@@ -1107,8 +1111,9 @@ c--- modify nodes to plot as a "brick" element
             call inMesh_Elements_FormBrickFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )
-c--- store data to returned array
+c--- modify faces-of-element and nodes-of-element array
             ien(:,i) = ieno(:)
+            ief(:,i) = iefo(:)
          else
             PRINT*,'Problematic element!'
             PRINT*,'ntri=',ntri,'nqua=',nqua
