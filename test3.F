@@ -155,7 +155,7 @@ c *** Nov. 2013) with N=2
 c *** 4. The WLSQ(G) according to SK&H
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171201
+c *** Last modified: IN <nompelis@nobelware.com> 20171218
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,nfa,
      &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
@@ -178,12 +178,14 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
       Real*8 :: xn(3),delq,rl,xy(3),beta,sgn
       Logical, parameter :: itest = .TRUE.
+      Real*8 :: dqa(3,nel),error   ! ERROR CALCULATION
 
 
       PRINT*,'Testing gradients'
 
 c--- Impose a field variable and its analytical gradient vector
       delta = 60.0d0
+      delta =  1.0d0   ! ERROR CALCULATION
       do i = 1,nel+nge
          xx(:) = xce(:,i)
 c======= Field variable
@@ -193,6 +195,7 @@ c======= Analytical (exact) gradient of field variable
          dq(2,i) = delta*cos( xx(2)*delta )
          dq(3,i) = 0.0d0
       enddo
+      dqa(:,:) = dq(:,1:nel)   ! ERROR CALCULATION
 
 c--- Output the data
       open(unit=10,file='CELL_DATA.dat',status='unknown')
@@ -236,6 +239,15 @@ c--- Output the data
 
          write(10,*) ieni(:)
       enddo
+      close(10)
+
+      open(unit=10,file='POINTCELL_DATA.dat',status='unknown')
+      write(10,*) 'variables = x y z q'
+      write(10,*) 'zone T="Cell-center data"'
+      do i = 1,nel
+         write(10,*) xce(:,i),q(i)
+      enddo
+ 100  Format(100(1x,e16.9))
       close(10)
 
 c--- Output the analytical gradient
@@ -285,6 +297,14 @@ c--- Output the analytical gradient
          endif
 
          write(10,*) ieni(:)
+      enddo
+      close(10)
+
+      open(unit=10,file='POINTCELL_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dxq dyq dzq'
+      write(10,*) 'zone T="Cell-center gradient"'
+      do i = 1,nel
+         write(10,*) xce(:,i),dq(:,i)
       enddo
       close(10)
 
@@ -465,7 +485,7 @@ c--- form weights
          Case(5)   ! SK&H GLSQ (i.e. hybrid formula of G-G and WLSQ(G))
 
 c--- form weights
-         beta = 0.0d0      ! TEMPORARY (to force only G-G)
+         beta = 1.0d0      ! TEMPORARY (beta=0 to force only G-G)
 
          wem = 0.0d0                  ! maximum weight value
          xo(:) = xce(:,i)             ! get cell centroid
@@ -473,10 +493,12 @@ c--- form weights
             j = ief(k,i)              ! get face number
             if( ife(1,j) .eq. i ) then
                ii = ife(2,j)          ! get adjacent cell number
+        IF(ii.le.0 .OR. ii.gt.nel+nge) PRINT*,'SCREAM' ! HACK
                sgn = +1.0d0           ! outward-pointing convention
             else
                ii = ife(1,j)          ! get adjacent cell number
                sgn = -1.0d0           ! outward-pointing convention
+        IF(ii.le.0 .OR. ii.gt.nel+nge) PRINT*,'SCREAM' ! HACK
             endif
             xx(:) = xce(:,ii) - xo(:) ! get cent-to-cent vector
             rd = sqrt( xx(1)**2 + xx(2)**2 + xx(3)**2 )
@@ -503,7 +525,8 @@ c--- form weights
             !--- augmenting RHS with G-G RHS (Eq.14 with D=1)
             rhs(1:3) = rhs(1:3) + 2.0d0*(1.0d0 - beta) *
      &                            0.5d0*s(j)*sgn*ssx(:,1,j)*(q(ii)+q(i))
-     &   !                        0.5d0*s(j)*sgn*ssx(:,1,j)*delq
+     &   !!!!!  SHOULD BE THIS    0.5d0*s(j)*sgn*ssx(:,1,j)*(q(ii)+q(i))
+     &   !!!!!  WRONG IN PAPER    0.5d0*s(j)*sgn*ssx(:,1,j)*delq
          enddo
 
          !--- augmenting LHS diagonal entries from G-G (Eq.14 with D=1 / Eq.15)
@@ -574,6 +597,22 @@ c--- Output the approximate gradient
          write(10,*) ieni(:)
       enddo
       close(10)
+
+      open(unit=10,file='POINTCELL_APPROX_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dxq dyq dzq'
+      write(10,*) 'zone T="Cell-center approx gradient"'
+      do i = 1,nel
+         write(10,*) xce(:,i),dq(:,i)
+      enddo
+      close(10)
+
+c--- Print the error of the reconstruction
+      error = 0.0d0
+      do i = 1,nel
+         error = error + abs(dqa(2,i) - dq(2,i))
+      enddo
+      error = error/dble(nel)
+      print*,'N=',nel,', Error=',error
 
       End subroutine
 
