@@ -9,7 +9,7 @@ c *** construction using different methods. It is based off the "demo1" code
 c *** and has been substantially modified.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171201
+c *** Last modified: IN <nompelis@nobelware.com> 20180112
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -134,13 +134,327 @@ c--- call a subroutine to create additional geometric data
      &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,s,ssx)
 
 c--- call a subroutine to test gradient reconstruction
-      call test_gradient(nz,nno,nel,nge,net,nfa,
+c     call test_gradient(nz,nno,nel,nge,net,nfa,
+c    &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
+      call test_gradient_ife(nz,nno,nel,nge,net,nfa,
      &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
 
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien, xce, vol, xcf, s, ssx, q, dq )
 
       End
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c *** A dual subroutine to perform gradient reconstruction from field data using
+c *** the Weighted Least-Squares method. This routine is the same as the
+c *** "test_gradients()" routine but all assembly of the operator is face-based.
+c *** Several methods are used: (NOT FUNCTIONAL)
+c *** 2. The WLSQ(N) according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
+c *** Nov. 2013) with N=0
+c *** 3. The WLSQ(N) according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
+c *** Nov. 2013) with N=2
+c *** 4. The WLSQ(G) according to SK&H
+c ***
+c *** Created:       IN <nompelis@nobelware.com> 20180112
+c *** Last modified: IN <nompelis@nobelware.com> 20180112
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      Subroutine test_gradient_ife(nz,nno,nel,nge,net,nfa,
+     &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
+      Implicit None
+      Integer(kind=8),intent(IN) :: nno,nel,nfa,nge,net
+      Integer(kind=4),intent(IN) :: nz
+      Integer(kind=8),intent(IN) :: ifn(0:4,nfa)
+      Integer(kind=8),intent(IN) :: ife(2,nfa)
+      Integer(kind=8),intent(IN) :: izone(4,nz)
+      Integer(kind=8),intent(IN) :: ief(0:6,nel)
+      Integer(kind=8),intent(IN) :: ien(0:8,nel)
+      Real*8,intent(IN) :: x(3,nno)
+      Real*8,intent(IN) :: xce(3,net),xcf(3,nfa)
+      Real*8,intent(IN) :: vol(nel),ssx(3,3,nfa),s(nfa)
+      Real*8,intent(INOUT) :: q(net),dq(3,net)
+
+      Integer(kind=8) :: i,j,k,ii,ieni(8)
+      Real*8 :: xx(3),delta
+      Integer(kind=4) :: imethod = 3
+      Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
+      Real*8 :: xn(3),delq,rl,xy(3),beta,sgn
+      Real*8,allocatable :: bmat(:,:,:),bvec(:,:)
+      Logical, parameter :: itest = .TRUE.
+      Real*8 :: dqa(3,nel),error   ! ERROR CALCULATION
+      Integer(kind=4) :: ierr
+
+
+      PRINT*,'Testing ife() gradients'
+
+c--- Allocate working arrays
+      allocate(bmat(4,4,nel+nge),bvec(4,nel+nge), STAT=ierr)
+      if( ierr.ne.0 ) then
+         PRINT*,'Could not allocate working arrays'
+         STOP
+      endif
+
+c--- Impose a field variable and its analytical gradient vector
+      delta = 60.0d0
+      delta =  1.0d0   ! ERROR CALCULATION
+      delta = 20.0d0
+      do i = 1,nel+nge
+         xx(:) = xce(:,i)
+c======= Field variable
+         q(i) = sin( xx(2)*delta )*sin( xx(1)*delta*0.5d0 )
+c======= Analytical (exact) gradient of field variable
+         dq(1,i) = sin( xx(2)*delta )* 0.5d0*delta*cos( xx(1)*delta*0.5d0 )
+         dq(2,i) = delta*cos( xx(2)*delta ) *sin( xx(1)*delta*0.5d0 )
+         dq(3,i) = 0.0d0
+      enddo
+      dqa(:,:) = dq(:,1:nel)   ! ERROR CALCULATION
+
+c--- Output the data
+      open(unit=10,file='CELL_DATA.dat',status='unknown')
+      write(10,*) 'variables = x y z q'
+      write(10,*) 'zone T="Cell-center data"'
+      write(10,*) 'NODES=',nno
+      write(10,*) 'ELEMENTS=',nel
+      write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
+      write(10,*) 'VARLOCATION=([1-3]=NODAL,[4]=CELLCENTERED)'
+      do i = 1,nno
+         write(10,*) x(1,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(2,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(3,i)
+      enddo
+      do i = 1,nel
+         write(10,*) q(i)
+      enddo
+      do i = 1,nel
+         if( ien(0,i) .eq. 4 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 5 ) then
+            ieni(1:4) = ien(1:4,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 6 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:7) = ien(4:6,i)
+            ieni(8) = ien(6,i)
+         else if( ien(0,i) .eq. 8 ) then
+            ieni(:) = ien(1:8,i)
+         else
+            PRINT*,'Prolematic element connectivity'
+            STOP
+         endif
+
+         write(10,*) ieni(:)
+      enddo
+      close(10)
+
+      open(unit=10,file='POINTCELL_DATA.dat',status='unknown')
+      write(10,*) 'variables = x y z q'
+      write(10,*) 'zone T="Cell-center data"'
+      do i = 1,nel
+         write(10,*) xce(:,i),q(i)
+      enddo
+ 100  Format(100(1x,e16.9))
+      close(10)
+
+c--- Output the analytical gradient
+      open(unit=10,file='CELL_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dq_x dq_y dq_z'
+      write(10,*) 'zone T="Cell-center grad"'
+      write(10,*) 'NODES=',nno
+      write(10,*) 'ELEMENTS=',nel
+      write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
+      write(10,*) 'VARLOCATION=([1-3]=NODAL,[4-6]=CELLCENTERED)'
+      do i = 1,nno
+         write(10,*) x(1,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(2,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(3,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(1,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(2,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(3,i)
+      enddo
+      do i = 1,nel
+         if( ien(0,i) .eq. 4 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 5 ) then
+            ieni(1:4) = ien(1:4,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 6 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:7) = ien(4:6,i)
+            ieni(8) = ien(6,i)
+         else if( ien(0,i) .eq. 8 ) then
+            ieni(:) = ien(1:8,i)
+         else
+            PRINT*,'Prolematic element connectivity'
+            STOP
+         endif
+
+         write(10,*) ieni(:)
+      enddo
+      close(10)
+
+      open(unit=10,file='POINTCELL_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dxq dyq dzq'
+      write(10,*) 'zone T="Cell-center gradient"'
+      do i = 1,nel
+         write(10,*) xce(:,i),dq(:,i)
+      enddo
+      close(10)
+
+c--- Calculate the approximate gradient
+c--- (Disregard all arithmetic efficiency concerns for now...)
+      bmat(:,:,:) = 0.0d0
+      bvec(:,:) = 0.0d0
+
+      do j = 1,nfa
+         i = ife(1,j)
+         ii = ife(2,j)
+
+
+         Select Case( imethod )
+
+         Case(2)   ! SK&H WLSQ(N=0)
+
+
+         Case(3)   ! SK&H WLSQ(N=2)
+
+            xx(:) = xce(:,ii) - xce(:,i) ! get cent-to-cent vector
+            rd = sqrt( xx(1)**2 + xx(2)**2 + xx(3)**2 )
+
+            xn(:) = xx(:)/rd                 ! (x_L)_j
+            delq = q(ii) - q(i)              ! (Delta q)_j
+            rl = rd                          ! L_j
+            wei(1) =    1.0d0/rl**2          ! w_j
+
+            bmat(1:3,1, i) = bmat(1:3,1, i) + wei(1)*xx(:)*xx(1)
+            bmat(1:3,2, i) = bmat(1:3,2, i) + wei(1)*xx(:)*xx(2)
+            bmat(1:3,3, i) = bmat(1:3,3, i) + wei(1)*xx(:)*xx(3)
+            !---- need a 4th equation given the hard-wired 4x4 inversion
+            bmat(4,4, i) = 1.0d0              ! over-write without worries...
+
+            bvec(1:3, i) = bvec(1:3, i) + wei(1)*rl*delq*xn(:)
+
+            bmat(1:3,1,ii) = bmat(1:3,1,ii) + wei(1)*xx(:)*xx(1)
+            bmat(1:3,2,ii) = bmat(1:3,2,ii) + wei(1)*xx(:)*xx(2)
+            bmat(1:3,3,ii) = bmat(1:3,3,ii) + wei(1)*xx(:)*xx(3)
+            !---- need a 4th equation given the hard-wired 4x4 inversion
+            bmat(4,4,ii) = 1.0d0              ! over-write without worries...
+
+            bvec(1:3,ii) = bvec(1:3,ii) + wei(1)*rl*delq*xn(:)
+
+         Case(4)   ! SK&H WLSQ(G)
+
+
+         Case(5)   ! SK&H GLSQ (i.e. hybrid formula of G-G and WLSQ(G))
+
+         Case default
+            PRINT*,'Bad method number. Exiting.'
+            STOP
+         End Select
+
+      enddo
+
+c--- execute the linear operation to solve for all cells
+      do i = 1,nel
+         rmat(:,:) = bmat(:,:,i)
+         rhs(:) =    bvec(:,i)
+
+         call invert_fbf( rmat )
+
+         dq(:,i) = rmat(1:3,1)*rhs(1) +
+     &             rmat(1:3,2)*rhs(2) +
+     &             rmat(1:3,3)*rhs(3) +
+     &             rmat(1:3,4)*rhs(4)      ! last entry is not needed
+      enddo
+
+c--- Drop working arrays
+      deallocate(bmat,bvec)
+
+c--- Output the approximate gradient
+      open(unit=10,file='CELL_APPROX_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dq_x dq_y dq_z'
+      write(10,*) 'zone T="Cell-center approx"'
+      write(10,*) 'NODES=',nno
+      write(10,*) 'ELEMENTS=',nel
+      write(10,*) 'DATAPACKING=BLOCK, ZONETYPE=FEBRICK'
+      write(10,*) 'VARLOCATION=([1-3]=NODAL,[4-6]=CELLCENTERED)'
+      do i = 1,nno
+         write(10,*) x(1,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(2,i)
+      enddo
+      do i = 1,nno
+         write(10,*) x(3,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(1,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(2,i)
+      enddo
+      do i = 1,nel
+         write(10,*) dq(3,i)
+      enddo
+      do i = 1,nel
+         if( ien(0,i) .eq. 4 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 5 ) then
+            ieni(1:4) = ien(1:4,i)
+            ieni(5:8) = ien(4,i)
+         else if( ien(0,i) .eq. 6 ) then
+            ieni(1:3) = ien(1:3,i)
+            ieni(4) = ien(3,i)
+            ieni(5:7) = ien(4:6,i)
+            ieni(8) = ien(6,i)
+         else if( ien(0,i) .eq. 8 ) then
+            ieni(:) = ien(1:8,i)
+         else
+            PRINT*,'Prolematic element connectivity'
+            STOP
+         endif
+
+         write(10,*) ieni(:)
+      enddo
+      close(10)
+
+      open(unit=10,file='POINTCELL_APPROX_GRADIENT.dat',status='unknown')
+      write(10,*) 'variables = x y z dxq dyq dzq'
+      write(10,*) 'zone T="Cell-center approx gradient"'
+      do i = 1,nel
+         write(10,*) xce(:,i),dq(:,i)
+      enddo
+      close(10)
+
+c--- Print the error of the reconstruction
+      error = 0.0d0
+      do i = 1,nel
+         error = error + abs(dqa(2,i) - dq(2,i))
+      enddo
+      error = error/dble(nel)
+      print*,'N=',nel,', Error=',error
+
+      End subroutine
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c *** A subroutine to perform gradient reconstruction from field data using
@@ -186,13 +500,14 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c--- Impose a field variable and its analytical gradient vector
       delta = 60.0d0
       delta =  1.0d0   ! ERROR CALCULATION
+      delta = 20.0d0
       do i = 1,nel+nge
          xx(:) = xce(:,i)
 c======= Field variable
-         q(i) = sin( xx(2)*delta )
+         q(i) = sin( xx(2)*delta )*sin( xx(1)*delta*0.5d0 )
 c======= Analytical (exact) gradient of field variable
-         dq(1,i) = 0.0d0
-         dq(2,i) = delta*cos( xx(2)*delta )
+         dq(1,i) = sin( xx(2)*delta )* 0.5d0*delta*cos( xx(1)*delta*0.5d0 )
+         dq(2,i) = delta*cos( xx(2)*delta ) *sin( xx(1)*delta*0.5d0 )
          dq(3,i) = 0.0d0
       enddo
       dqa(:,:) = dq(:,1:nel)   ! ERROR CALCULATION
