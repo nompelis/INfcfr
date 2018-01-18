@@ -205,6 +205,12 @@ c======= Analytical (exact) gradient of field variable
          dq(1,i) = sin( xx(2)*delta )* 0.5d0*delta*cos( xx(1)*delta*0.5d0 )
          dq(2,i) = delta*cos( xx(2)*delta ) *sin( xx(1)*delta*0.5d0 )
          dq(3,i) = 0.0d0
+c======= Field variable
+         q(i) = xx(1)*xx(2)*xx(3)
+c======= Analytical (exact) gradient of field variable
+         dq(1,i) = xx(2)*xx(3)
+         dq(2,i) = xx(1)*xx(3)
+         dq(3,i) = xx(1)*xx(2)
       enddo
       dqa(:,:) = dq(:,1:nel)   ! ERROR CALCULATION
 
@@ -509,6 +515,12 @@ c======= Analytical (exact) gradient of field variable
          dq(1,i) = sin( xx(2)*delta )* 0.5d0*delta*cos( xx(1)*delta*0.5d0 )
          dq(2,i) = delta*cos( xx(2)*delta ) *sin( xx(1)*delta*0.5d0 )
          dq(3,i) = 0.0d0
+c======= Field variable
+         q(i) = xx(1)*xx(2)*xx(3)
+c======= Analytical (exact) gradient of field variable
+         dq(1,i) = xx(2)*xx(3)
+         dq(2,i) = xx(1)*xx(3)
+         dq(3,i) = xx(1)*xx(2)
       enddo
       dqa(:,:) = dq(:,1:nel)   ! ERROR CALCULATION
 
