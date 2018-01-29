@@ -5,11 +5,11 @@
 /* The code can write an HDF file with the case-file contents.         */
 /*                                                                     */
 /* Version 1.9                                                         */
-/* Copyright 2011-2016 Ioannis Nompelis <nompelis@nobelware.com>       */
+/* Copyright 2011-2018 Ioannis Nompelis <nompelis@nobelware.com>       */
 /***********************************************************************/
 
 /**************************************************************************
- Copyright (c) 2011-2016, Ioannis Nompelis
+ Copyright (c) 2011-2018, Ioannis Nompelis
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without any
@@ -1733,4 +1733,100 @@ int inFluent_ConvertCaseHDF(struct my_fluentcase *cas, char *filename,
 }
 #endif
 
+
+/*
+ * Fucntion to write a plot3d file from the nodes given block information
+ * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20180129
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20180129
+ */
+
+int inFluent_OutputPlot3d(struct my_fluentcase *cas, int nblock,
+                          long *im, long *jm, long *km, char *filename)
+{
+   char *FUNC ="inFluent_OutputPlot3d";
+   FILE *fp;
+   int n;
+   long i,j,k,nn;
+
+
+   if( cas == NULL ) {
+      printf(" e [%s]  Null pointer to case file data\n",FUNC);
+      return(1);
+   }
+
+   if( cas->x == NULL || cas->y == NULL || cas->z == NULL ) {
+      printf(" e [%s]  Case file data is problematic\n",FUNC);
+      return(2);
+   }
+
+   printf(" i [%s]  Attempting to write plot3d file \"%s\"\n",FUNC,filename);
+
+   fp = fopen(filename,"w");
+   if(fp == NULL) {
+      fprintf(stdout," e [%s]  Could not open file \"%s\" \n",FUNC,filename);
+      return(3);
+   }
+
+   fprintf(fp,"  %d \n", nblock);
+   for(n=0;n<nblock;++n) {
+      fprintf(fp,"  %ld  %ld  %ld \n", im[n],jm[n],km[n] );
+   }
+
+   for(n=0;n<nblock;++n) {
+      int nc;
+
+      nn = 0;
+      nc = 0;
+      for(i=0;i<im[n];++i) {
+      for(j=0;j<jm[n];++j) {
+      for(k=0;k<km[n];++k) {
+         fprintf(fp," %23.16e", cas->x[nn] );
+         nn += 1;
+
+         nc += 1;
+         if( nc == 3 ) {
+            fprintf(fp,"\n");
+            nc = 0;
+         }
+      }}}
+      if( nc != 0 ) fprintf(fp,"\n");
+
+      nn = 0;
+      nc = 0;
+      for(i=0;i<im[n];++i) {
+      for(j=0;j<jm[n];++j) {
+      for(k=0;k<km[n];++k) {
+         fprintf(fp," %23.16e", cas->y[nn] );
+         nn += 1;
+
+         nc += 1;
+         if( nc == 3 ) {
+            fprintf(fp,"\n");
+            nc = 0;
+         }
+      }}}
+      if( nc != 0 ) fprintf(fp,"\n");
+
+      nn = 0;
+      nc = 0;
+      for(i=0;i<im[n];++i) {
+      for(j=0;j<jm[n];++j) {
+      for(k=0;k<km[n];++k) {
+         fprintf(fp," %23.16e", cas->z[nn] );
+         nn += 1;
+
+         nc += 1;
+         if( nc == 3 ) {
+            fprintf(fp,"\n");
+            nc = 0;
+         }
+      }}}
+      if( nc != 0 ) fprintf(fp,"\n");
+
+   }
+
+   fclose(fp);
+
+   return(0);
+}
 

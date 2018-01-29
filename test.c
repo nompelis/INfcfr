@@ -2,7 +2,7 @@
 /* A demo driver code to test Fluent case file reading.                */
 /*                                                                     */
 /* Version 1.9                                                         */
-/* Copyright 2011-2016 Ioannis Nompelis <nompelis@nobelware.com>       */
+/* Copyright 2011-2018 Ioannis Nompelis <nompelis@nobelware.com>       */
 /***********************************************************************/
 
 #include <stdio.h>
@@ -83,6 +83,14 @@ int main() {
    inFluent_InitCase(&cas);
    inFluent_ReadCase(&cas,"grid.cas");
    (void) tecplot_groups_opengl_style( &cas, (char *) "DATA.dat" );
+#ifdef _TEST_PLOT3D_
+{
+   int n=1;
+// long im[] = { 1024 }, jm[] = { 512 }, km[] = { 2 };
+   long im[] = { 2 }, jm[] = { 81 }, km[] = { 2 };
+   (void) inFluent_OutputPlot3d( &cas, n, im, jm, km, "plot3d.g" );
+}
+#endif
    inFluent_ClearCase(&cas);
 
 // when using conversion to HDF do this
@@ -95,6 +103,7 @@ int main() {
 // inFluent_ConvertCaseHDF(&cas, "grid.cas", &hdfvars);
 // inFluent_ClearCase(&cas);
 #endif
+
    return(0);
 }
 

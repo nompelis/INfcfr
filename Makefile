@@ -5,6 +5,7 @@ include Makefile.comm
 
 LIB_NAME = libINfluent
 COPTS += -DNO_USE_HDF
+COPTS += -D  _TEST_PLOT3D_
 LINK_OPTS = -shared -Wl,-soname,$(LIB_NAME).so -o $(LIB_NAME).so 
 AR_OPTS = rsc $(LIB_NAME).a
 
@@ -19,7 +20,7 @@ lib:
 	ar $(AR_OPTS) fluent.o fluent_fortran.o
 	$(LD) $(LINK_OPTS) fluent.o fluent_fortran.o $(HDF_LIB)
 
-test:
+test: lib
 	$(CC) $(COPTS) -Wl,-rpath=. test.c  -L. -lINfluent
 
 demo:

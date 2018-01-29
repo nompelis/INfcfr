@@ -4,11 +4,11 @@
 /* the Fluent case format for use in my codes.                         */
 /*                                                                     */
 /* Version 1.9                                                         */
-/* Copyright 2011-2017 Ioannis Nompelis <nompelis@nobelware.com>       */
+/* Copyright 2011-2018 Ioannis Nompelis <nompelis@nobelware.com>       */
 /***********************************************************************/
 
 /**************************************************************************
- Copyright (c) 2011-2017, Ioannis Nompelis
+ Copyright (c) 2011-2018, Ioannis Nompelis
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without any
@@ -46,7 +46,7 @@
  * structure declarations and function prototypes for fluent.c
  * which is a set of routines for handling Fluent case files
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20110330
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 201711/29
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20180129
  */
 
 typedef long ifn_t [4];
@@ -89,6 +89,9 @@ void inFluent_CaseInfo( struct my_fluentcase *cp );
 int inFluent_ClearCase( struct my_fluentcase *cp );
 
 int inFluent_ReadCase( struct my_fluentcase *cp, char *filename );
+
+int inFluent_OutputPlot3d(struct my_fluentcase *cas, int nblock,
+                          long *im, long *jm, long *km, char *filename);
 
 #endif
 
