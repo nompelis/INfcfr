@@ -2,7 +2,7 @@
 
  A simple library for parsing and handling Fluent "case" files intended for
  computational fluid dynamics (CFD) simulations written in C.
- Copyright 2011-2016 Ioannis Nompelis
+ Copyright 2011-2018 Ioannis Nompelis
 
 This is a very simple library that can be used to parse "case" files prepared
 for use by the Fluent software package. It is meant to be used for loading an
@@ -100,4 +100,10 @@ Grids,'' Technical Notes, AIAA Journal, Vol. 51, No. 11, November 2013.
 The code can very easily be modified to test additional methods.
 
 IN 2017/11/10
+
+
+Added functionality to allow for plot3d exporting of multi-block structured
+grids. This works for case-files that have been built by such grids.
+
+IN 2018/01/29
 
