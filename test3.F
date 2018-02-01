@@ -1233,7 +1233,9 @@ c--- form face centroids, face basis and face area
 
 
 #ifdef _DEBUG2_
-         WRITE(*,200) 'Face centroid:',xcf(:,i)
+         WRITE(*,200) 'Face centroid:',xcf(:,j)
+         WRITE(*,*) 'j=',j ! HACK
+         WRITE(*,200) 'Face area:',s(i)
  200     Format(a14,3(1x,e20.13))
 #endif
       enddo
