@@ -134,10 +134,10 @@ c--- call a subroutine to create additional geometric data
      &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,s,ssx)
 
 c--- call a subroutine to test gradient reconstruction
-c     call test_gradient(nz,nno,nel,nge,net,nfa,
-c    &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
-      call test_gradient_ife(nz,nno,nel,nge,net,nfa,
+      call test_gradient(nz,nno,nel,nge,net,nfa,
      &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
+c     call test_gradient_ife(nz,nno,nel,nge,net,nfa,
+c    &                   ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
 
 c--- drop arrays
       deallocate( x, ifn, ife, izone, ief, ien, xce, vol, xcf, s, ssx, q, dq )
@@ -179,7 +179,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
       Real*8 :: xn(3),delq,rl,xy(3),beta,sgn
       Real*8,allocatable :: bmat(:,:,:),bvec(:,:)
-      Logical, parameter :: itest = .TRUE.
+      Logical, parameter :: itest = .FALSE.
       Real*8 :: dqa(3,nel),error   ! ERROR CALCULATION
       Integer(kind=4) :: ierr
 
@@ -258,6 +258,7 @@ c--- Output the data
       enddo
       close(10)
 
+      IF( itest ) THEN
       open(unit=10,file='POINTCELL_DATA.dat',status='unknown')
       write(10,*) 'variables = x y z q'
       write(10,*) 'zone T="Cell-center data"'
@@ -266,6 +267,7 @@ c--- Output the data
       enddo
  100  Format(100(1x,e16.9))
       close(10)
+      ENDIF
 
 c--- Output the analytical gradient
       open(unit=10,file='CELL_GRADIENT.dat',status='unknown')
@@ -317,6 +319,7 @@ c--- Output the analytical gradient
       enddo
       close(10)
 
+      IF( itest ) THEN
       open(unit=10,file='POINTCELL_GRADIENT.dat',status='unknown')
       write(10,*) 'variables = x y z dxq dyq dzq'
       write(10,*) 'zone T="Cell-center gradient"'
@@ -324,6 +327,7 @@ c--- Output the analytical gradient
          write(10,*) xce(:,i),dq(:,i)
       enddo
       close(10)
+      ENDIF
 
 c--- Calculate the approximate gradient
 c--- (Disregard all arithmetic efficiency concerns for now...)
@@ -444,6 +448,7 @@ c--- Output the approximate gradient
       enddo
       close(10)
 
+      IF( itest ) THEN
       open(unit=10,file='POINTCELL_APPROX_GRADIENT.dat',status='unknown')
       write(10,*) 'variables = x y z dxq dyq dzq'
       write(10,*) 'zone T="Cell-center approx gradient"'
@@ -451,6 +456,7 @@ c--- Output the approximate gradient
          write(10,*) xce(:,i),dq(:,i)
       enddo
       close(10)
+      ENDIF
 
 c--- Print the error of the reconstruction
       error = 0.0d0
@@ -472,10 +478,13 @@ c *** 2. The WLSQ(N) according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
 c *** Nov. 2013) with N=0
 c *** 3. The WLSQ(N) according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
 c *** Nov. 2013) with N=2
-c *** 4. The WLSQ(G) according to SK&H
+c *** 4. The WLSQ(G) according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
+c *** Nov. 2013) which Green-Gauss type weights
+c *** 5. The GLSQ according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
+c *** Nov. 2013) which is a hybrid method
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20171218
+c *** Last modified: IN <nompelis@nobelware.com> 20180201
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,nfa,
      &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
@@ -497,7 +506,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=4) :: imethod = 5
       Real*8 :: rmat(4,4),rhs(4),xo(3),rd,wei(6),wem
       Real*8 :: xn(3),delq,rl,xy(3),beta,sgn
-      Logical, parameter :: itest = .TRUE.
+      Logical, parameter :: itest = .FALSE.
       Real*8 :: dqa(3,nel),error   ! ERROR CALCULATION
 
 
@@ -568,6 +577,7 @@ c--- Output the data
       enddo
       close(10)
 
+      IF( itest ) THEN
       open(unit=10,file='POINTCELL_DATA.dat',status='unknown')
       write(10,*) 'variables = x y z q'
       write(10,*) 'zone T="Cell-center data"'
@@ -576,6 +586,7 @@ c--- Output the data
       enddo
  100  Format(100(1x,e16.9))
       close(10)
+      ENDIF
 
 c--- Output the analytical gradient
       open(unit=10,file='CELL_GRADIENT.dat',status='unknown')
@@ -627,6 +638,7 @@ c--- Output the analytical gradient
       enddo
       close(10)
 
+      IF( itest ) THEN
       open(unit=10,file='POINTCELL_GRADIENT.dat',status='unknown')
       write(10,*) 'variables = x y z dxq dyq dzq'
       write(10,*) 'zone T="Cell-center gradient"'
@@ -634,6 +646,7 @@ c--- Output the analytical gradient
          write(10,*) xce(:,i),dq(:,i)
       enddo
       close(10)
+      ENDIF
 
 c--- Calculate the approximate gradient
 c--- (Disregard all arithmetic efficiency concerns for now...)
@@ -754,11 +767,12 @@ c--- form weights
             rmat(1:3,1) = rmat(1:3,1) + wei(k)*xx(:)*xx(1)
             rmat(1:3,2) = rmat(1:3,2) + wei(k)*xx(:)*xx(2)
             rmat(1:3,3) = rmat(1:3,3) + wei(k)*xx(:)*xx(3)
-            !---- need a 4th equation given the hard-wired 4x4 inversion
-            rmat(4,4) = 1.0d0                ! over-write without worries...
 
             rhs(1:3) = rhs(1:3) + wei(k)*rl*delq*xn(:)
          enddo
+
+         !---- need a 4th equation given the hard-wired 4x4 inversion
+         rmat(4,4) = 1.0d0
 
          call invert_fbf( rmat )
 
@@ -796,11 +810,12 @@ c--- form weights
             rmat(1:3,1) = rmat(1:3,1) + wei(k)*xx(:)*xx(1)
             rmat(1:3,2) = rmat(1:3,2) + wei(k)*xx(:)*xx(2)
             rmat(1:3,3) = rmat(1:3,3) + wei(k)*xx(:)*xx(3)
-            !---- need a 4th equation given the hard-wired 4x4 inversion
-            rmat(4,4) = 1.0d0                ! over-write without worries...
 
             rhs(1:3) = rhs(1:3) + wei(k)*rl*delq*xn(:)
          enddo
+
+         !---- need a 4th equation given the hard-wired 4x4 inversion
+         rmat(4,4) = 1.0d0
 
          call invert_fbf( rmat )
 
@@ -812,7 +827,7 @@ c--- form weights
          Case(5)   ! SK&H GLSQ (i.e. hybrid formula of G-G and WLSQ(G))
 
 c--- form weights
-         beta = 1.0d0      ! TEMPORARY (beta=0 to force only G-G)
+         beta = 0.0d0      ! TEMPORARY (beta=0 to force only G-G)
 
          wem = 0.0d0                  ! maximum weight value
          xo(:) = xce(:,i)             ! get cell centroid
@@ -862,7 +877,7 @@ c--- form weights
          rmat(3,3) = rmat(3,3) + 2.0d0*(1.0d0 - beta)*vol(i)
 
          !---- need a 4th equation given the hard-wired 4x4 inversion
-         rmat(4,4) = 1.0d0                ! over-write without worries...
+         rmat(4,4) = 1.0d0
 
          call invert_fbf( rmat )
 
@@ -925,6 +940,7 @@ c--- Output the approximate gradient
       enddo
       close(10)
 
+      IF( itest ) THEN
       open(unit=10,file='POINTCELL_APPROX_GRADIENT.dat',status='unknown')
       write(10,*) 'variables = x y z dxq dyq dzq'
       write(10,*) 'zone T="Cell-center approx gradient"'
@@ -932,6 +948,7 @@ c--- Output the approximate gradient
          write(10,*) xce(:,i),dq(:,i)
       enddo
       close(10)
+      ENDIF
 
 c--- Print the error of the reconstruction
       error = 0.0d0
