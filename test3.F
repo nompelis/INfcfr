@@ -484,7 +484,7 @@ c *** 5. The GLSQ according to Shima, Kitamura & Haga (AIAA J. Vol 51, No 11,
 c *** Nov. 2013) which is a hybrid method
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171107
-c *** Last modified: IN <nompelis@nobelware.com> 20180201
+c *** Last modified: IN <nompelis@nobelware.com> 20180202
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine test_gradient(nz,nno,nel,nge,net,nfa,
      &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,ssx,s,q,dq)
@@ -866,9 +866,7 @@ c--- form weights
 
             !--- augmenting RHS with G-G RHS (Eq.14 with D=1)
             rhs(1:3) = rhs(1:3) + 2.0d0*(1.0d0 - beta) *
-     &                            0.5d0*s(j)*sgn*ssx(:,1,j)*(q(ii)+q(i))
-     &   !!!!!  SHOULD BE THIS    0.5d0*s(j)*sgn*ssx(:,1,j)*(q(ii)+q(i))
-     &   !!!!!  WRONG IN PAPER    0.5d0*s(j)*sgn*ssx(:,1,j)*delq
+     &                            0.5d0*s(j)*sgn*ssx(:,1,j)*delq
          enddo
 
          !--- augmenting LHS diagonal entries from G-G (Eq.14 with D=1 / Eq.15)
