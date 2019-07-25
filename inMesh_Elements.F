@@ -135,7 +135,7 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Constructing a tetrahedron; number',i
        PRINT*,'Faces:', iefi(1:4)
 #endif
@@ -182,7 +182,7 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
        j1 = iefi(1)
        tet%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! triangle's "right" face is the tetr.
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Tetrahedron is on the right of face 1'
 #endif
           tet%n1 = ifn(1, j1 )   ! set 1st node
@@ -190,7 +190,7 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           tet%n3 = ifn(3, j1 )   ! set 3rd node
           tet%fc(1) = -1         ! edge number and direction (sign)
        else
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Tetrahedron is on the left of face 1'
 #endif
           tet%n1 = ifn(2, j1 )   ! set 1st node is the 2nd one
@@ -202,31 +202,31 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
 c --- Find face 2; look for 2 matching nodes for n1,n2 of the tetrahedron
 c --- Determine orientation of face 2 (using ife); set conventions
 c --- Also set 4th node of the tetrahedron
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',tet%n1,tet%n2
 #endif
        j2 = -1                   ! undefined number
        do k = 2,4                ! loop over remaining faces; 1st excluded
           jj = iefi(k)           ! face number
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
           ik = 0                 ! number of nodes matched for this trial face
           do kk = 1,3            ! loop over trial face's nodes (always 3)
              if( ifn(kk,jj) .eq. tet%n1 ) ik = ik + 1
              if( ifn(kk,jj) .eq. tet%n2 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
           enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
           if( ik .eq. 2 ) then
              j2 = jj
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 as:',j2
 #endif
        do kk = 1,3            ! loop over 2nd face's nodes (always 3)
@@ -234,7 +234,7 @@ c --- Also set 4th node of the tetrahedron
              tet%n4 = ifn(kk,j2)
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,' Assigned fourth node of tet:',tet%n4
        PRINT*,' Left/right elems:',ife(:,j2)
 #endif
@@ -256,37 +256,37 @@ c --- Also set 4th node of the tetrahedron
              tet%fc(2) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 convention:',tet%fc(2)
 #endif
 
 c --- Find face 3; look for 2 matching nodes for n2,n3 of the tetrahedron
 c --- Determine orientation of face 3 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',tet%n2,tet%n3
 #endif
        j3 = -1                   ! undefined number
        do k = 2,4                ! loop over remaining faces; 1st excluded
           jj = iefi(k)           ! face number
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
           ik = 0                 ! number of nodes matched for this trial face
           do kk = 1,3            ! loop over trial face's nodes (always 3)
              if( ifn(kk,jj) .eq. tet%n2 ) ik = ik + 1
              if( ifn(kk,jj) .eq. tet%n3 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
           enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
           if( ik .eq. 2 ) then
              j3 = jj
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 as:',j3
        PRINT*,' Left/right elems:',ife(:,j3)
 #endif
@@ -308,7 +308,7 @@ c --- Determine orientation of face 3 (using ife); set conventions
              tet%fc(3) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 convention:',tet%fc(3)
 #endif
 
@@ -318,7 +318,7 @@ c --- Determine orientation of face 4 (using ife); set conventions
           jj = iefi(k)           ! face number
           if( j1.ne.jj .AND. j2.ne.jj .AND. j3.ne.jj ) j4 = jj
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 as:',j4
 #endif
 
@@ -339,7 +339,7 @@ c --- Determine orientation of face 4 (using ife); set conventions
              tet%fc(4) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 convention:',tet%fc(4)
 #endif
 
@@ -387,7 +387,7 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Constructing a pyramid; number',i
        PRINT*,'Faces:', iefi(1:5)
 #endif
@@ -438,12 +438,12 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
        do jj = 1,iefi(0)
           if( ifn(0, iefi(jj) ) .eq. 4 ) j1 = jj
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'First face is number ',j1
 #endif
        pyr%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! quad's "right" face is the pyramid
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Pyramid is on the right of face 1'
 #endif
           pyr%n1 = ifn(1, j1 )   ! set 1st node
@@ -452,7 +452,7 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           pyr%n4 = ifn(4, j1 )   ! set 4th node
           pyr%fc(1) = -1         ! edge number and direction (sign)
        else
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Pyramid is on the left of face 1'
 #endif
           pyr%n1 = ifn(2, j1 )   ! set 1st node
@@ -461,14 +461,14 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           pyr%n4 = ifn(3, j1 )   ! set 4th node
           pyr%fc(1) = +1         ! edge number and direction (sign)
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'First face nodes:',pyr%n1,pyr%n2,pyr%n3,pyr%n4
 #endif
 
 c --- Find face 2; look for 2 matching nodes for n1,n2 of the pyramid
 c --- Determine orientation of face 2 (using ife); set conventions
 c --- Also set 5th node of the pyramid
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',pyr%n1,pyr%n2
 #endif
        j2 = -1                   ! undefined number
@@ -476,18 +476,18 @@ c --- Also set 5th node of the pyramid
           jj = iefi(k)           ! face number
 
           if( jj .ne. j1 ) then  ! exclude the first (base) face
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,3         ! loop over trial face's nodes (always 3)
                 if( ifn(kk,jj) .eq. pyr%n1 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. pyr%n2 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -496,7 +496,7 @@ c --- Also set 5th node of the pyramid
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 as:',j2
 #endif
 
@@ -505,7 +505,7 @@ c --- Also set 5th node of the pyramid
              pyr%n5 = ifn(kk,j2)
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,' Assigned fifth node of pyramid:',pyr%n5
        PRINT*,' Left/right elems:',ife(:,j2)
 #endif
@@ -526,13 +526,13 @@ c --- Also set 5th node of the pyramid
              pyr%fc(2) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 convention:',pyr%fc(2)
 #endif
 
 c --- Find face 3; look for 2 matching nodes for n2,n3 of the pyramid
 c --- Determine orientation of face 3 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',pyr%n2,pyr%n3
 #endif
        j3 = -1                   ! undefined number
@@ -540,18 +540,18 @@ c --- Determine orientation of face 3 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj .ne. j1 ) then  ! exclude the first (base) face
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,3         ! loop over trial face's nodes (always 3)
                 if( ifn(kk,jj) .eq. pyr%n2 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. pyr%n3 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -559,7 +559,7 @@ c --- Determine orientation of face 3 (using ife); set conventions
              endif
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 as:',j3
        PRINT*,' Left/right elems:',ife(:,j3)
 #endif
@@ -581,13 +581,13 @@ c --- Determine orientation of face 3 (using ife); set conventions
              pyr%fc(3) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 convention:',pyr%fc(3)
 #endif
 
 c --- Find face 4; look for 2 matching nodes for n3,n4 of the pyramid
 c --- Determine orientation of face 4 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',pyr%n3,pyr%n4
 #endif
        j4 = -1                   ! undefined number
@@ -595,18 +595,18 @@ c --- Determine orientation of face 4 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj .ne. j1 ) then  ! exclude the first (base) face
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,3         ! loop over trial face's nodes (always 3)
                 if( ifn(kk,jj) .eq. pyr%n3 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. pyr%n4 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -614,7 +614,7 @@ c --- Determine orientation of face 4 (using ife); set conventions
              endif
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 as:',j4
        PRINT*,' Left/right elems:',ife(:,j4)
 #endif
@@ -636,13 +636,13 @@ c --- Determine orientation of face 4 (using ife); set conventions
              pyr%fc(4) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 convention:',pyr%fc(4)
 #endif
 
 c --- Find face 5; look for 2 matching nodes for n4,n1 of the pyramid
 c --- Determine orientation of face 5 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',pyr%n4,pyr%n1
 #endif
        j5 = -1                   ! undefined number
@@ -650,18 +650,18 @@ c --- Determine orientation of face 5 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj .ne. j1 ) then  ! exclude the first (base) face
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,3         ! loop over trial face's nodes (always 3)
                 if( ifn(kk,jj) .eq. pyr%n4 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. pyr%n1 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -669,7 +669,7 @@ c --- Determine orientation of face 5 (using ife); set conventions
              endif
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 5 as:',j5
        PRINT*,' Left/right elems:',ife(:,j5)
 #endif
@@ -691,7 +691,7 @@ c --- Determine orientation of face 5 (using ife); set conventions
              pyr%fc(5) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 5 convention:',pyr%fc(5)
 #endif
 
@@ -742,7 +742,7 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Constructing a wedge; number',i
        PRINT*,'Faces:', iefi(1:5)
 #endif
@@ -796,12 +796,12 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
              if( ifn(0, iefi(jj) ) .eq. 3 ) j1 = jj
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'First face is number ',j1
 #endif
        wed%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! triangle's "right" cell is the wedge
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Wedge is on the right of face 1'
 #endif
           wed%n1 = ifn(1, j1 )   ! set 1st node
@@ -809,7 +809,7 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           wed%n3 = ifn(3, j1 )   ! set 3rd node
           wed%fc(1) = -1         ! edge number and direction (sign)
        else
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Wedge is on the left of face 1'
 #endif
           wed%n1 = ifn(2, j1 )   ! set 1st node
@@ -817,14 +817,14 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           wed%n3 = ifn(3, j1 )   ! set 3rd node
           wed%fc(1) = +1         ! edge number and direction (sign)
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'First face nodes:',wed%n1,wed%n2,wed%n3
 #endif
 
 c --- Find face 3; look for 2 matching nodes for n1,n2 of the wedge
 c --- Determine orientation of face 3 (using ife); set conventions
 c --- Also set 4th,5th node of the wedge
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',wed%n1,wed%n2
 #endif
        j3 = -1                   ! undefined number
@@ -832,18 +832,18 @@ c --- Also set 4th,5th node of the wedge
           jj = iefi(k)           ! face number
 
           if( jj .ne. j1 ) then  ! exclude the wedge's first (base) face
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,ifn(0,jj) ! loop over all the trial face's nodes
                 if( ifn(kk,jj) .eq. wed%n1 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. wed%n2 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -852,7 +852,7 @@ c --- Also set 4th,5th node of the wedge
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 as:',j3
        PRINT*,' Left/right elems:',ife(:,j3)
 #endif
@@ -896,13 +896,13 @@ c --- Also set 4th,5th node of the wedge
              wed%n5 = ifn(1,j3)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 convention:',wed%fc(3)
 #endif
 
 c --- Find face 2; look for 2 matching nodes for n4,n5 of the wedge
 c --- Determine orientation of face 2 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',wed%n4,wed%n5
 #endif
        j2 = -1                   ! undefined number
@@ -910,18 +910,18 @@ c --- Determine orientation of face 2 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj .ne. j3 ) then  ! exclude the wedge's f3
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,ifn(0,jj) ! loop over all the trial face's nodes
                 if( ifn(kk,jj) .eq. wed%n4 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. wed%n5 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -930,7 +930,7 @@ c --- Determine orientation of face 2 (using ife); set conventions
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 as:',j2
 #endif
        do kk = 1,3            ! loop over 2nd face's nodes (always 3)
@@ -938,7 +938,7 @@ c --- Determine orientation of face 2 (using ife); set conventions
              wed%n6 = ifn(kk,j2)
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,' Assigned sixth node of wedge:',wed%n6
        PRINT*,' Left/right elems:',ife(:,j2)
 #endif
@@ -960,13 +960,13 @@ c --- Determine orientation of face 2 (using ife); set conventions
              wed%fc(2) = -3           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 convention:',wed%fc(2)
 #endif
 
 c --- Find face 4; look for 2 matching nodes for n2,n3 of the wedge
 c --- Determine orientation of face 4 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',wed%n2,wed%n3
 #endif
        j4 = -1                   ! undefined number
@@ -974,18 +974,18 @@ c --- Determine orientation of face 4 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj .ne. j1 ) then  ! exclude the wedge's f1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,ifn(0,jj) ! loop over all the trial face's nodes
                 if( ifn(kk,jj) .eq. wed%n2 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. wed%n3 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -994,7 +994,7 @@ c --- Determine orientation of face 4 (using ife); set conventions
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 as:',j4
 #endif
 
@@ -1021,7 +1021,7 @@ c --- Determine orientation of face 4 (using ife); set conventions
              wed%fc(4) = -4           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 convention:',wed%fc(4)
 #endif
 
@@ -1034,7 +1034,7 @@ c --- Determine orientation of face 5 (using ife); set conventions
           if( jj .ne. j1 .AND. jj .ne. j2 .AND.
      &        jj .ne. j3 .AND. jj .ne. j4 ) j5 = jj
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 5 as:',j5
 #endif
 
@@ -1061,7 +1061,7 @@ c --- Determine orientation of face 5 (using ife); set conventions
              wed%fc(5) = -4           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 5 convention:',wed%fc(5)
 #endif
 
@@ -1113,7 +1113,7 @@ c --- Internal variable for this example
        Integer(kind=2) :: k,ik,kk
 
 
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Constructing a brick; number',i
        PRINT*,'Faces:', iefi(1:6)
 #endif
@@ -1167,12 +1167,12 @@ c --- By convention (as in Fluent case files), right is where the thumb points
 c --- when listing nodes by a right-hand rule.
 c --- By a starting choice we set the face-convention flag to +1 or -1
        j1 = iefi(1)
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'First face is number ',j1
 #endif
        bri%f1 = j1               ! set 1st face
        if( ife(2,j1) .eq. i ) then      ! quad's "right" cell is the brick
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Brick is on the right of face 1'
 #endif
           bri%n1 = ifn(1, j1 )   ! set 1st node
@@ -1181,7 +1181,7 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           bri%n4 = ifn(4, j1 )   ! set 4th node
           bri%fc(1) = -1         ! edge number and direction (sign)
        else
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
           PRINT*,'Brick is on the left of face 1'
 #endif
           bri%n1 = ifn(2, j1 )   ! set 1st node
@@ -1190,39 +1190,39 @@ c --- By a starting choice we set the face-convention flag to +1 or -1
           bri%n4 = ifn(3, j1 )   ! set 4th node
           bri%fc(1) = +1         ! edge number and direction (sign)
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'First face nodes:',bri%n1,bri%n2,bri%n3,bri%n4
 #endif
 
 c --- Find face 3; look for 2 matching nodes for n1,n2 of the brick
 c --- Determine orientation of face 3 (using ife); set conventions
 c --- Also set 5th,6th node of the brick
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',bri%n1,bri%n2
 #endif
        j3 = -1                   ! undefined number
        do k = 2,6                ! loop over remaining faces
           jj = iefi(k)           ! face number
 
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
           ik = 0                 ! number of nodes matched for this trial face
           do kk = 1,4            ! loop over all the trial face's nodes
              if( ifn(kk,jj) .eq. bri%n1 ) ik = ik + 1
              if( ifn(kk,jj) .eq. bri%n2 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
           enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
           if( ik .eq. 2 ) then
              j3 = jj
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 as:',j3
        PRINT*,' Left/right elems:',ife(:,j3)
 #endif
@@ -1266,13 +1266,13 @@ c --- Also set 5th,6th node of the brick
              bri%n6 = ifn(1,j3)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 3 convention:',bri%fc(3)
 #endif
 
 c --- Find face 2; look for 2 matching nodes for n5,n6 of the brick
 c --- Determine orientation of face 2 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',bri%n5,bri%n6
 #endif
        j2 = -1                   ! undefined number
@@ -1280,18 +1280,18 @@ c --- Determine orientation of face 2 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj .ne. j3 ) then  ! exclude the brick's f3
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,4         ! loop over all the trial face's nodes
                 if( ifn(kk,jj) .eq. bri%n5 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. bri%n6 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -1300,7 +1300,7 @@ c --- Determine orientation of face 2 (using ife); set conventions
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 as:',j2
        PRINT*,' Left/right elems:',ife(:,j2)
 #endif
@@ -1344,13 +1344,13 @@ c --- Determine orientation of face 2 (using ife); set conventions
              bri%n7 = ifn(1,j2)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 2 convention:',bri%fc(2)
 #endif
 
 c --- Find face 4; look for 2 matching nodes for n7,n8 of the brick
 c --- Determine orientation of face 4 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',bri%n5,bri%n6
 #endif
        j4 = -1                   ! undefined number
@@ -1358,18 +1358,18 @@ c --- Determine orientation of face 4 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj.ne.j1 .AND. jj.ne.j2 ) then  ! exclude the brick's f1 or f2
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,4         ! loop over all the trial face's nodes
                 if( ifn(kk,jj) .eq. bri%n7 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. bri%n8 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -1378,7 +1378,7 @@ c --- Determine orientation of face 4 (using ife); set conventions
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 as:',j4
        PRINT*,' Left/right elems:',ife(:,j4)
 #endif
@@ -1406,13 +1406,13 @@ c --- Determine orientation of face 4 (using ife); set conventions
              bri%fc(4) = -4           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 4 convention:',bri%fc(4)
 #endif
 
 c --- Find face 6; look for 2 matching nodes for n2,n3 of the brick
 c --- Determine orientation of face 6 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',bri%n2,bri%n3
 #endif
        j6 = -1                   ! undefined number
@@ -1420,18 +1420,18 @@ c --- Determine orientation of face 6 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj.ne.j3 .AND. jj.ne.j4 ) then  ! exclude the brick's f3 or f4
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              ik = 0              ! number of nodes matched for this trial face
              do kk = 1,4         ! loop over all the trial face's nodes
                 if( ifn(kk,jj) .eq. bri%n2 ) ik = ik + 1
                 if( ifn(kk,jj) .eq. bri%n3 ) ik = ik + 1
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Node:',kk,ifn(kk,jj)
 #endif
              enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'After testing ik=',ik
 #endif
              if( ik .eq. 2 ) then
@@ -1440,7 +1440,7 @@ c --- Determine orientation of face 6 (using ife); set conventions
 
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 6 as:',j6
        PRINT*,' Left/right elems:',ife(:,j6)
 #endif
@@ -1468,13 +1468,13 @@ c --- Determine orientation of face 6 (using ife); set conventions
              bri%fc(6) = -4           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 6 convention:',bri%fc(6)
 #endif
 
 c --- Find face 5; look for the face that is un-attached
 c --- Determine orientation of face 5 (using ife); set conventions
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Will match nodes:',bri%n2,bri%n3
 #endif
        j5 = -1                   ! undefined number
@@ -1482,13 +1482,13 @@ c --- Determine orientation of face 5 (using ife); set conventions
           jj = iefi(k)           ! face number
 
           if( jj.ne.j2 .AND. jj.ne.j3 .AND. jj.ne.j4 .AND. jj.ne.j6 ) then
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Trial face:',k,jj
 #endif
              j5 = jj
           endif
        enddo
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 5 as:',j5
        PRINT*,' Left/right elems:',ife(:,j5)
 #endif
@@ -1516,7 +1516,7 @@ c --- Determine orientation of face 5 (using ife); set conventions
              bri%fc(5) = -4           ! correct edge direction (sign)
           endif
        endif
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Identified face 5 convention:',bri%fc(5)
 #endif
 
@@ -1612,7 +1612,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        v1 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
      &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
      &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume*6 of tetrahedron 1 2 3 5',v1
        PRINT*,'Centroid 1:',xc(:)
 #endif
@@ -1624,7 +1624,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        v2 = ( dx2(2)*dx1(3) - dx1(2)*dx2(3) )*dx3(1) +
      &      (-dx2(1)*dx1(3) + dx1(1)*dx2(3) )*dx3(2) +
      &      ( dx2(1)*dx1(2) - dx1(1)*dx2(2) )*dx3(3)
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume*6 of tetrahedron 1 3 4 5',v2
        PRINT*,'Centroid 2:',xt(:)
 #endif
@@ -1632,7 +1632,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        vol = v1 + v2
        xc(:) = (xc(:)*v1 + xt(:)*v2)/vol
        vol = vol/6.0d0
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Centroid:',xc(:)
 #endif
 
@@ -1662,11 +1662,11 @@ C      dx3(:) =  x4(:) - x1(:)
 C      v1 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
 C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
 C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
 C      PRINT*,'Volume*6 of tetrahedron 1 2 3 4',v1
 #endif
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x4, v1 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 2 3 4',v1
        PRINT*,'Centroid 1:',xc(:)
 #endif
@@ -1679,11 +1679,11 @@ C      dx3(:) =  x6(:) - x2(:)
 C      v2 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
 C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
 C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
 C      PRINT*,'Volume*6 of tetrahedron 2 3 4 6',v2
 #endif
        call inMesh_Tetrahedron_VolumeFromVertices( x2, x3, x4, x6, v2 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 2 3 4 6',v2
        PRINT*,'Centroid 2:',xc(:)
 #endif
@@ -1695,11 +1695,11 @@ C      dx3(:) =  x5(:) - x2(:)
 C      v3 = ( dx1(2)*dx2(3) - dx2(2)*dx1(3) )*dx3(1) +
 C    &      (-dx1(1)*dx2(3) + dx2(1)*dx1(3) )*dx3(2) +
 C    &      ( dx1(1)*dx2(2) - dx2(1)*dx1(2) )*dx3(3)
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
 C      PRINT*,'Volume*6 of tetrahedron 2 6 4 5',v3
 #endif
        call inMesh_Tetrahedron_VolumeFromVertices( x2, x6, x4, x5, v3 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 2 6 4 5',v3
        PRINT*,'Centroid 3:',xc(:)
 #endif
@@ -1728,7 +1728,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x3, x7, xc )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x3, x7, v1 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 2 3 7',v1
        PRINT*,'Centroid 1:',xc(:)
 #endif
@@ -1736,7 +1736,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x2, x7, x6, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x2, x7, x6, v2 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 2 7 6',v2
        PRINT*,'Centroid 2:',xc(:)
 #endif
@@ -1744,7 +1744,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x6, x7, x5, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x6, x7, x5, v3 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 6 7 5',v3
        PRINT*,'Centroid 3:',xc(:)
 #endif
@@ -1752,7 +1752,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x3, x4, x7, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x3, x4, x7, v4 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 3 4 7',v4
        PRINT*,'Centroid 4:',xc(:)
 #endif
@@ -1760,7 +1760,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x7, x4, x8, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x7, x4, x8, v5 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 7 4 8',v5
        PRINT*,'Centroid 5:',xc(:)
 #endif
@@ -1768,7 +1768,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        call inMesh_Tetrahedron_CentroidFromVertices( x1, x7, x8, x5, xt )
        call inMesh_Tetrahedron_VolumeFromVertices( x1, x7, x8, x5, v6 )
-#ifdef _DEBUG_
+#ifdef _DEBUG_MESH_ELEMENTS_
        PRINT*,'Volume of tetrahedron 1 7 8 5',v6
        PRINT*,'Centroid 6:',xc(:)
 #endif
