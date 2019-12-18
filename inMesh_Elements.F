@@ -719,11 +719,11 @@ c --- Assign returned structures
        End subroutine
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c *** Routine to form a wedge cell element from three triangles and two quads.
+c *** Routine to form a wedge cell element from two triangles and three quads.
 c *** This routine assumes that what is passed in "ifn" are _valid_ surf. elems.
 c *** (Definitions on the validity of surface elements are found in my notes.)
 c *** Created:       IN <nompelis@nobelware.com> 20171014
-c *** Last modified: IN <nompelis@nobelware.com> 20171022
+c *** Last modified: IN <nompelis@nobelware.com> 20191216
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        Subroutine inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, iefi,
