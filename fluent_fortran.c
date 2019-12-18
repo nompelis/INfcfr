@@ -2,7 +2,7 @@
 /* A wrapper for invoking the library through a Fortran interface      */
 /*                                                                     */
 /* Version 1.9                                                         */
-/* Copyright 2011-2017 Ioannis Nompelis <nompelis@nobelware.com>       */
+/* Copyright 2011-2019 Ioannis Nompelis <nompelis@nobelware.com>       */
 /***********************************************************************/
 
 #include <stdio.h>
@@ -106,10 +106,11 @@ int influent_fortranwrapperfill_( long *izone,
 
    // copy zones's bounds
    for(n=0;n<nz;++n) {
-      izone[4*n+0] = cas->zones[n].nstart;
-      izone[4*n+1] = cas->zones[n].nend;
-      izone[4*n+2] = izone[n*4+1] - izone[n*4+0] + 1;
-      izone[4*n+3] = cas->zones[n].type;
+      izone[5*n+0] = cas->zones[n].nstart;
+      izone[5*n+1] = cas->zones[n].nend;
+      izone[5*n+2] = izone[n*5+1] - izone[n*5+0] + 1;
+      izone[5*n+3] = (long) (cas->zones[n].type);
+      izone[5*n+4] = (long) (cas->zones[n].iattr);
    }
 
    // copy node coefficients

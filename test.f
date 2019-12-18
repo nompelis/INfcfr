@@ -6,7 +6,7 @@ c *** each cell by returning the element's nodes in an array; the node ordering
 c *** is specific to my own conventions outlined in my notes.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171201
+c *** Last modified: IN <nompelis@nobelware.com> 20191216
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -23,7 +23,7 @@ c--- read a Fluent case-file and transfer it to arrays
       call inFluent_FortranWrapperInit( trim( fname ), nz, nno, nel, nfa, ierr )
       PRINT*,'Result of Init() ierr=',ierr,' nz=',nz
 
-      allocate( ifn(0:4,nfa), ife(2,nfa), izone(4,nz),
+      allocate( ifn(0:4,nfa), ife(2,nfa), izone(5,nz),
      &          x(3,nno), STAT=ierr )
       PRINT*,'Result of arrays allocation ierr=',ierr
 
@@ -102,7 +102,7 @@ c *** NOTE: At this point in the development process I am testing for tets and
 c *** I have a _hardwired_ tet-cell output testing code block.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171201
+c *** Last modified: IN <nompelis@nobelware.com> 20191216
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x)
       Use inMesh_Elements
@@ -111,7 +111,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=4) :: nz
       Integer(kind=8),dimension(0:4,nfa) :: ifn
       Integer(kind=8),dimension(2,nfa) :: ife
-      Integer(kind=8),dimension(4,nz) :: izone
+      Integer(kind=8),dimension(5,nz) :: izone
       Real*8,dimension(3,nno) :: x
       Integer(kind=4) :: ierr
 
@@ -204,7 +204,7 @@ c--- modify faces-of-element and nodes-of-element array
             ief(:,i) = iefo(:)
 c--- modify nodes to plot as a "brick" element
             ieno(6:8) = ieno(5)
-         else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
+         else if( ntri .eq. 2 .AND. nqua .eq. 3 ) then
             call inMesh_Elements_FormWedgeFromFaces(
      &                  nfa, ifn, ife, i, ief(0,i),
      &                  ieno, iefo, ierr )

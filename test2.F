@@ -8,7 +8,7 @@ c *** This code is intended to be used for testing scalar field gradient
 c *** construction using different methods. It is based off the "demo1" code.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171130
+c *** Last modified: IN <nompelis@nobelware.com> 20191216
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Program main
       Implicit None
@@ -28,7 +28,7 @@ c--- read a Fluent case-file and transfer it to arrays
       call inFluent_FortranWrapperInit( trim( fname ), nz, nno, nel, nfa, ierr )
       PRINT*,'Result of Init() ierr=',ierr,' nz=',nz
 
-      allocate( ifn(0:4,nfa), ife(2,nfa), izone(4,nz),
+      allocate( ifn(0:4,nfa), ife(2,nfa), izone(5,nz),
      &          x(3,nno), STAT=ierr )
       PRINT*,'Result of arrays allocation ierr=',ierr
 
@@ -37,7 +37,7 @@ c--- read a Fluent case-file and transfer it to arrays
       do n = 1,nz
          write(*,101) 'ZONE',n,'->',izone(:,n)
       enddo
- 101  Format(a4,1x,i5,1x,a2,1x,4(1x,i9))
+ 101  Format(a4,1x,i5,1x,a2,1x,4(1x,i9),3x,i4)
 
       call inFluent_FortranWrapperTerm( ierr )
       PRINT*,'Result of Term() ierr=',ierr
@@ -146,7 +146,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20171201
+c *** Last modified: IN <nompelis@nobelware.com> 20191216
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,
      &                         nfa,ifn,ife,izone,x,ief,ien,xce,xcf)
@@ -156,7 +156,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=4),intent(IN) :: nz
       Integer(kind=8),intent(IN) :: ifn(0:4,nfa)
       Integer(kind=8),intent(INOUT) :: ife(2,nfa)
-      Integer(kind=8),intent(IN) :: izone(4,nz)
+      Integer(kind=8),intent(IN) :: izone(5,nz)
       Integer(kind=8),intent(IN) :: ief(0:6,nel)
       Integer(kind=8),intent(IN) :: ien(0:8,nel)
       Real*8,intent(IN) :: x(3,nno)
@@ -202,7 +202,7 @@ c--- form element centroids (all subjectivity in construction is in inMesh API)
      &                x(1, ien(3,i) ),
      &                x(1, ien(4,i) ),
      &                x(1, ien(5,i) ), xce(1,i), vol )
-         else if( ntri .eq. 3 .AND. nqua .eq. 2 ) then
+         else if( ntri .eq. 2 .AND. nqua .eq. 3 ) then
             call inMesh_Wedge_CentroidFromVertices(
      &                x(1, ien(1,i) ),
      &                x(1, ien(2,i) ),
@@ -387,7 +387,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c *** 
 c *** Created:       IN <nompelis@nobelware.com> 20171006
-c *** Last modified: IN <nompelis@nobelware.com> 20171201
+c *** Last modified: IN <nompelis@nobelware.com> 20191216
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_cells(nz,nno,nel,nfa,ifn,ife,izone,x,ief,ien)
       Use inMesh_Elements
@@ -396,7 +396,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Integer(kind=4),intent(IN) :: nz
       Integer(kind=8),intent(IN),dimension(0:4,nfa) :: ifn
       Integer(kind=8),intent(IN),dimension(2,nfa) :: ife
-      Integer(kind=8),intent(IN),dimension(4,nz) :: izone
+      Integer(kind=8),intent(IN),dimension(5,nz) :: izone
       Real*8,dimension(3,nno),intent(IN) :: x
       Integer(kind=8),dimension(0:6,nel),intent(OUT) :: ief
       Integer(kind=8),dimension(0:8,nel),intent(OUT) :: ien
