@@ -5,11 +5,11 @@
 /* The code can write an HDF file with the case-file contents.         */
 /*                                                                     */
 /* Version 1.9                                                         */
-/* Copyright 2011-2018 Ioannis Nompelis <nompelis@nobelware.com>       */
+/* Copyright 2011-2019 Ioannis Nompelis <nompelis@nobelware.com>       */
 /***********************************************************************/
 
 /**************************************************************************
- Copyright (c) 2011-2018, Ioannis Nompelis
+ Copyright (c) 2011-2019, Ioannis Nompelis
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without any
@@ -74,14 +74,14 @@
 /*
  * Fucntion to handle the reading of nodes from the case file
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20130617
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20160914
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20191216
  */
 
 int inFluent_HandleCells(struct my_fluentcase *cas, char *data,
                          long *nline, FILE *fp) {
 
    char *FUNC = "inFluent_HandleCells";
-   int id,nd;
+   int id,nd,itmp;
    long istart,iend;
    struct my_fluentzone *zp;
    int ins;
@@ -90,7 +90,7 @@ int inFluent_HandleCells(struct my_fluentcase *cas, char *data,
    // note that it is like this:
    // (12 (zone-id first-index last-index type XX))     OR
    // (12 (0       first-index last-index type))
-   sscanf(data,"(12 (%x %lx %lx 0 %d)",&id,&istart,&iend,&nd);
+   sscanf(data,"(12 (%x %lx %lx %d %d)",&id,&istart,&iend,&itmp,&nd);
 
    if(id == 0) {
       fprintf(stdout," i [%s]  Case file provided total number of cells: %ld \n",FUNC,iend);
