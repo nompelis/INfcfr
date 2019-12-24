@@ -682,7 +682,7 @@ c *** construction functions. It fills arrays that are returned to the calling
 c *** function/routine.
 c ***
 c *** Created:       IN <nompelis@nobelware.com> 20171027
-c *** Last modified: IN <nompelis@nobelware.com> 20191216
+c *** Last modified: IN <nompelis@nobelware.com> 20191223
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       Subroutine make_geometry(nz,nno,nel,nge,net,nfa,
      &                         ifn,ife,izone,x,ief,ien,xce,vol,xcf,s,ssx)
@@ -797,7 +797,7 @@ c--- form face centroids, face basis and face area
             xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
             xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
             xl = sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
-            s(j) = 0.5d0*xl**2
+            s(j) = 0.5d0*xl
             xl = 1.0d0/xl
             ssx(:,1,j) = xn(:)*xl
             xl = 1.0d0/sqrt(dx1(1)**2 + dx1(2)**2 + dx1(3)**2)
@@ -820,7 +820,7 @@ c--- form face centroids, face basis and face area
             xn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
             xn(3) =  dx1(1)*dx2(2) -dx2(1)*dx1(2)
             xl = sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
-            s(j) = 0.5d0*xl**2
+            s(j) = 0.5d0*xl
 
             xl = 1.0d0/sqrt(dx2(1)**2 + dx2(2)**2 + dx2(3)**2)
             ssx(:,2,j) = dx2(:)*xl
@@ -831,7 +831,7 @@ c--- form face centroids, face basis and face area
             yn(2) = -dx1(1)*dx2(3) +dx2(1)*dx1(3)
             yn(3) = +dx1(1)*dx2(2) -dx2(1)*dx1(2)
             yl = sqrt(yn(1)**2 + yn(2)**2 + yn(3)**2)
-            s(j) = s(j) + 0.5d0*yl**2
+            s(j) = s(j) + 0.5d0*yl
 
             xn(:) = xn(:) + yn(:)
             xl = 1.0d0/sqrt(xn(1)**2 + xn(2)**2 + xn(3)**2)
