@@ -5,11 +5,11 @@
 /* The code can write an HDF file with the case-file contents.         */
 /*                                                                     */
 /* Version 1.9                                                         */
-/* Copyright 2011-2019 Ioannis Nompelis <nompelis@nobelware.com>       */
+/* Copyright 2011-2020 Ioannis Nompelis <nompelis@nobelware.com>       */
 /***********************************************************************/
 
 /**************************************************************************
- Copyright (c) 2011-2019, Ioannis Nompelis
+ Copyright (c) 2011-2020, Ioannis Nompelis
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without any
@@ -678,7 +678,7 @@ int inFluent_Readline(char **parse) {
    }
 
 
-   // if we4 got this far it is an unrecognized line
+   // if we got this far it is an unrecognized line
    return(-1);
 }
 
@@ -1092,7 +1092,7 @@ int inFluent_HDF_Startup( struct my_HDF_vars *hdfvars )
 /*
  * Fucntion to handle the conversion of nodes from the case file
  * Ioannis Nompelis <nompelis@nobelware.com>       Created: 20110401
- * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20140516
+ * Ioannis Nompelis <nompelis@nobelware.com> Last modified: 20200312
  */
 
 int inFluent_HandleNodesHDF(struct my_fluentcase *cas, char *data,
@@ -1101,7 +1101,7 @@ int inFluent_HandleNodesHDF(struct my_fluentcase *cas, char *data,
 {
 
    char *FUNC = "inFluent_HandleNodesHDF";
-   int id,nd;
+   int id,nd,itmp;
    long istart,iend;
    struct my_fluentzone *zp;
    long n;
@@ -1121,7 +1121,7 @@ int inFluent_HandleNodesHDF(struct my_fluentcase *cas, char *data,
    // (10 (zone-id first-index last-index type ND)(     OR
    // (10 (0       first-index last-index type ND))
    // where "type" is always zero
-   sscanf(data,"(10 (%x %lx %lx 0 %d)",&id,&istart,&iend,&nd);
+   sscanf(data,"(10 (%x %lx %lx %d %d)",&id,&istart,&iend,&itmp,&nd);
 
    if(id == 0) {
       fprintf(stdout," i [%s]  Case file provided total number of nodes: %ld \n",FUNC,iend);
